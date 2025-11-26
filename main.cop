@@ -1,0 +1,29 @@
+#include "skinohedron.hpp"
+#include "cotangent.hpp"
+#include <GLFW/glfw3.h>
+#include <imgui.h>
+
+int main() {
+    HalfedgeMesh mesh = generateGarbageHexSphere(8000); // 95% non-Delaunay
+
+    double t = 0.0, dt = 0.0005;
+    std::vector<Eigen::Vector3d> pos_left  = mesh.V;
+    std::vector<Eigen::Vector3d> pos_right = mesh.V;
+
+    while (!glfwWindowShouldClose(window)) {
+        for (int step=0; step<10; ++step) { // 1フレームで10ステップ進める
+            // Left: Cotangent (爆発用)
+            implicitMeanCurvatureFlowStep_Cotangent(pos_left, mesh, dt);
+
+            // Right: Skinohedron (永遠に生きる)
+            implicitMeanCurvatureFlowStep_Skinohedron(pos_right, mesh, dt);
+
+            t += dt;
+        }
+
+        renderSplitScreen(pos_left, pos_right, mesh.F);
+        ImGui::Text("Time: %.4f  Left vol: %.3e  Right vol: %.3e", t,
+                    computeVolume(pos_left, mesh.F),
+                    computeVolume(pos_right, mesh.F));
+    }
+}
