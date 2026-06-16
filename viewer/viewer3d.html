@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KSF · 3D solid-ball tetrahedral mesh</title>
+<style>
+  :root{
+    --bg:#0b1418; --panel:#0f1a20; --ink:#cfe3e8; --dim:#7fa0a8;
+    --amber:#e8b75a; --coral:#e0654f; --line:#1c2c33;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0b1418;color:#cfe3e8;
+    font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace}
+  #wrap{display:flex;flex-direction:column;height:100%}
+  header{padding:14px 18px;border-bottom:1px solid #1c2c33}
+  header h1{margin:0;font-size:15px;letter-spacing:.04em;font-weight:600}
+  header .sub{margin-top:3px;font-size:12px;color:#7fa0a8}
+  #stage{position:relative;flex:1;min-height:0}
+  canvas{display:block;width:100%;height:100%}
+  #hud{position:absolute;left:14px;bottom:14px;font-size:11px;color:#7fa0a8;
+    background:rgba(11,20,24,.66);padding:8px 10px;border:1px solid #1c2c33;
+    border-radius:6px;line-height:1.5;max-width:260px}
+  #hud b{color:#cfe3e8;font-weight:600}
+  #hud .a{color:#e8b75a}.c{color:#e0654f}
+  #ctrl{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;
+    gap:6px;align-items:flex-end}
+  button{font:inherit;font-size:11px;color:#cfe3e8;background:#0f1a20;
+    border:1px solid #1c2c33;border-radius:6px;padding:6px 9px;cursor:pointer}
+  button.on{border-color:#e8b75a;color:#e8b75a}
+  button:active{transform:translateY(1px)}
+  .legend{position:absolute;right:14px;bottom:14px;font-size:11px;color:#7fa0a8;
+    text-align:right;line-height:1.6}
+  .sw{display:inline-block;width:10px;height:10px;border-radius:2px;
+    vertical-align:-1px;margin-left:6px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>Kosaka Skin-o-hedron — 3D solid-ball tetrahedral mesh</h1>
+    <div class="sub">discrete &amp; continuum, side by side · one octant removed (jagged interior) + coordinate-plane slices (smooth cut)</div>
+  </header>
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <div id="ctrl">
+      <button id="bSpin" class="on">auto-rotate: on</button>
+      <button id="bCaps" class="on">slice caps: on</button>
+      <button id="bWire" class="on">wireframe: on</button>
+      <button id="bCarve" class="on">carve octant: on</button>
+    </div>
+    <div id="hud">
+      <b>What you are seeing</b><br>
+      <span class="a">▣ carved corner</span> — whole tetrahedra removed,
+      revealing the <b>discrete</b> stair-stepped interior.<br>
+      <span class="c">▤ flat cut planes</span> — the same solid sliced through
+      x=0, y=0, z=0, showing the <b>continuum</b> cross-section.<br>
+      drag to rotate · scroll to zoom
+    </div>
+    <div class="legend">
+      core <span class="sw" style="background:#3b6ea8"></span>
+      &nbsp;→&nbsp; surface <span class="sw" style="background:#e0654f"></span>
+    </div>
+  </div>
+</div>
+<script src="data3d.js"></script>
+<script>
+"use strict";
+const D = window.KSF3D;
+const gl = document.getElementById("gl").getContext("webgl",{antialias:true,depth:true});
+if(!gl){ document.body.innerHTML = "<p style='padding:20px'>WebGL not available.</p>"; }
+
+// ---------- unpack data ----------
+const V = new Float32Array(D.verts);          // flat xyz
+const TET = D.tets;                            // flat 4-index
+const nT = D.nT, rmax = D.rmax;
+function vget(i){ return [V[3*i],V[3*i+1],V[3*i+2]]; }
+
+// ---------- coolwarm-ish colour ramp by radius ----------
+function ramp(t){ // t in [0,1] : core(blue) -> surface(coral)
+  t=Math.max(0,Math.min(1,t));
+  const a=[0.231,0.431,0.659], b=[0.878,0.396,0.310];
+  return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t];
+}
+
+// ---------- octant logic ----------
+// removed octant = (+,+,+)
+function inRemoved(p){ return p[0]>1e-9 && p[1]>1e-9 && p[2]>1e-9; }
+
+// ---------- build solid faces (lit) + wireframe edges ----------
+const TF=[[0,1,2],[0,1,3],[0,2,3],[1,2,3]];
+let solidPos=[], solidNrm=[], solidCol=[];
+let edgeSet=new Set(), edgePos=[];
+function addTri(p0,p1,p2,col){
+  const u=[p1[0]-p0[0],p1[1]-p0[1],p1[2]-p0[2]];
+  const v=[p2[0]-p0[0],p2[1]-p0[1],p2[2]-p0[2]];
+  let n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];
+  const L=Math.hypot(n[0],n[1],n[2])||1; n=[n[0]/L,n[1]/L,n[2]/L];
+  for(const p of [p0,p1,p2]){ solidPos.push(p[0],p[1],p[2]);
+    solidNrm.push(n[0],n[1],n[2]); solidCol.push(col[0],col[1],col[2]); }
+}
+function buildSolid(carve){
+  solidPos=[];solidNrm=[];solidCol=[];edgeSet=new Set();edgePos=[];
+  for(let t=0;t<nT;t++){
+    const idx=[TET[4*t],TET[4*t+1],TET[4*t+2],TET[4*t+3]];
+    const ps=idx.map(vget);
+    const cen=[(ps[0][0]+ps[1][0]+ps[2][0]+ps[3][0])/4,
+               (ps[0][1]+ps[1][1]+ps[2][1]+ps[3][1])/4,
+               (ps[0][2]+ps[1][2]+ps[2][2]+ps[3][2])/4];
+    if(carve && inRemoved(cen)) continue;       // remove whole tet
+    for(const f of TF){
+      const p0=ps[f[0]],p1=ps[f[1]],p2=ps[f[2]];
+      const rc=(Math.hypot(...p0)+Math.hypot(...p1)+Math.hypot(...p2))/3/rmax;
+      addTri(p0,p1,p2,ramp(rc));
+    }
+    for(let a=0;a<4;a++)for(let b=a+1;b<4;b++){
+      const i=idx[a],j=idx[b],k=i<j?i*100000+j:j*100000+i;
+      if(!edgeSet.has(k)){edgeSet.add(k);
+        const pa=vget(i),pb=vget(j);
+        edgePos.push(pa[0],pa[1],pa[2],pb[0],pb[1],pb[2]);}
+    }
+  }
+}
+
+// ---------- build cut caps on x=0, y=0, z=0 (smooth filled cross-section) ----------
+// For each tet, intersect with the plane -> triangle or quad; triangulate.
+let capPos=[], capNrm=[], capCol=[];
+function planeCaps(axis){ // axis 0:x,1:y,2:z
+  const n=[0,0,0]; n[axis]=1;
+  for(let t=0;t<nT;t++){
+    const idx=[TET[4*t],TET[4*t+1],TET[4*t+2],TET[4*t+3]];
+    const ps=idx.map(vget);
+    const sd=ps.map(p=>p[axis]);                 // signed distance to plane
+    const pos=[],neg=[];
+    ps.forEach((p,i)=> (sd[i]>=0?pos:neg).push(i));
+    if(pos.length===0||neg.length===0) continue; // no crossing
+    // collect intersection points on crossing edges
+    const poly=[];
+    for(const i of pos) for(const j of neg){
+      const ti=sd[i]/(sd[i]-sd[j]);              // in [0,1]
+      poly.push([ps[i][0]+(ps[j][0]-ps[i][0])*ti,
+                 ps[i][1]+(ps[j][1]-ps[i][1])*ti,
+                 ps[i][2]+(ps[j][2]-ps[i][2])*ti]);
+    }
+    if(poly.length<3) continue;
+    // order polygon around centroid in the plane
+    const cx=poly.reduce((s,p)=>[s[0]+p[0],s[1]+p[1],s[2]+p[2]],[0,0,0]).map(v=>v/poly.length);
+    // carve notch: skip caps lying in the removed (+,+,+) projection
+    const o=[ (axis===0?1e9:cx[0]),(axis===1?1e9:cx[1]),(axis===2?1e9:cx[2]) ];
+    if((axis!==0?cx[0]:1)>1e-6 && (axis!==1?cx[1]:1)>1e-6 && (axis!==2?cx[2]:1)>1e-6){
+      // in-plane both other coords positive => inside removed corner => skip
+      let a1,a2; if(axis===0){a1=1;a2=2;} else if(axis===1){a1=0;a2=2;} else {a1=0;a2=1;}
+      if(cx[a1]>1e-6 && cx[a2]>1e-6) continue;
+    }
+    // basis in plane
+    let a1,a2; if(axis===0){a1=1;a2=2;} else if(axis===1){a1=0;a2=2;} else {a1=0;a2=1;}
+    poly.sort((P,Q)=>Math.atan2(P[a1]-cx[a1],P[a2]-cx[a2])-Math.atan2(Q[a1]-cx[a1],Q[a2]-cx[a2]));
+    const rc=Math.min(1,Math.hypot(...cx)/rmax);
+    let col=ramp(rc); col=[Math.min(1,col[0]*1.12+0.05),Math.min(1,col[1]*1.12+0.05),Math.min(1,col[2]*1.12+0.05)];
+    for(let k=1;k<poly.length-1;k++){
+      for(const p of [poly[0],poly[k],poly[k+1]]){ capPos.push(p[0],p[1],p[2]);
+        capNrm.push(n[0],n[1],n[2]); capCol.push(col[0],col[1],col[2]); }
+    }
+  }
+}
+function buildCaps(){ capPos=[];capNrm=[];capCol=[]; planeCaps(0);planeCaps(1);planeCaps(2); }
+
+// ---------- GL programs ----------
+function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(s);return s;}
+function prog(vs,fs){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));
+  gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw gl.getProgramInfoLog(p);return p;}
+
+const litVS=`
+attribute vec3 aPos; attribute vec3 aNrm; attribute vec3 aCol;
+uniform mat4 uMVP, uModel; varying vec3 vN; varying vec3 vC; varying vec3 vW;
+void main(){ vN=mat3(uModel)*aNrm; vC=aCol; vW=(uModel*vec4(aPos,1.)).xyz;
+  gl_Position=uMVP*vec4(aPos,1.); }`;
+const litFS=`
+precision mediump float; varying vec3 vN; varying vec3 vC; varying vec3 vW;
+uniform float uEmis;
+void main(){
+  vec3 N=normalize(vN); vec3 L=normalize(vec3(0.5,0.8,0.6));
+  float d=max(dot(N,L),0.0); float amb=0.38;
+  float lit=amb+0.72*d;
+  vec3 c=vC*lit + uEmis*vC;
+  gl_FragColor=vec4(c,1.0);
+}`;
+const lineVS=`attribute vec3 aPos; uniform mat4 uMVP; void main(){gl_Position=uMVP*vec4(aPos,1.);}`;
+const lineFS=`precision mediump float; void main(){ gl_FragColor=vec4(0.10,0.18,0.21,1.0); }`;
+
+const PL=prog(litVS,litFS), LN=prog(lineVS,lineFS);
+
+function buf(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);return b;}
+let bSolidP,bSolidN,bSolidC,nSolid,bEdgeP,nEdge,bCapP,bCapN,bCapC,nCap;
+function upload(){
+  bSolidP=buf(solidPos);bSolidN=buf(solidNrm);bSolidC=buf(solidCol);nSolid=solidPos.length/3;
+  bEdgeP=buf(edgePos);nEdge=edgePos.length/3;
+  bCapP=buf(capPos);bCapN=buf(capNrm);bCapC=buf(capCol);nCap=capPos.length/3;
+}
+
+// ---------- math ----------
+function persp(f,a,n,fa){const t=1/Math.tan(f/2);return[t/a,0,0,0, 0,t,0,0,
+  0,0,(fa+n)/(n-fa),-1, 0,0,2*fa*n/(n-fa),0];}
+function mul(A,B){const C=new Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;
+  for(let k=0;k<4;k++)s+=A[k*4+j]*B[i*4+k];C[i*4+j]=s;}return C;}
+function rotY(a){const c=Math.cos(a),s=Math.sin(a);return[c,0,-s,0, 0,1,0,0, s,0,c,0, 0,0,0,1];}
+function rotX(a){const c=Math.cos(a),s=Math.sin(a);return[1,0,0,0, 0,c,s,0, 0,-s,c,0, 0,0,0,1];}
+function trans(x,y,z){return[1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1];}
+
+// ---------- state ----------
+let spin=true, showCaps=true, showWire=true, carve=true;
+let rotx=-0.5, roty=0.7, dist=3.4, drag=false, lx=0, ly=0;
+const cv=gl.canvas;
+function resize(){const dpr=Math.min(devicePixelRatio||1,2);
+  cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;gl.viewport(0,0,cv.width,cv.height);}
+window.addEventListener("resize",resize);
+cv.addEventListener("mousedown",e=>{drag=true;lx=e.clientX;ly=e.clientY;});
+window.addEventListener("mouseup",()=>drag=false);
+window.addEventListener("mousemove",e=>{if(!drag)return;
+  roty+=(e.clientX-lx)*0.01;rotx+=(e.clientY-ly)*0.01;lx=e.clientX;ly=e.clientY;});
+cv.addEventListener("wheel",e=>{dist*=(1+Math.sign(e.deltaY)*0.08);
+  dist=Math.max(2.2,Math.min(7,dist));e.preventDefault();},{passive:false});
+
+function setBtn(b,on,label){b.classList.toggle("on",on);b.textContent=label+": "+(on?"on":"off");}
+bSpin.onclick=()=>{spin=!spin;setBtn(bSpin,spin,"auto-rotate");};
+bCaps.onclick=()=>{showCaps=!showCaps;setBtn(bCaps,showCaps,"slice caps");};
+bWire.onclick=()=>{showWire=!showWire;setBtn(bWire,showWire,"wireframe");};
+bCarve.onclick=()=>{carve=!carve;setBtn(bCarve,carve,"carve octant");
+  buildSolid(carve);buildCaps();upload();};
+
+// ---------- draw ----------
+function attrib(p,name,b,size){const l=gl.getAttribLocation(p,name);
+  gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(l);
+  gl.vertexAttribPointer(l,size,gl.FLOAT,false,0,0);}
+function frame(){
+  if(spin) roty+=0.0045;
+  resize();
+  gl.clearColor(0.043,0.078,0.094,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);
+  const P=persp(1.0,cv.width/cv.height,0.1,50);
+  const Mmodel=mul(rotY(roty),rotX(rotx));
+  const view=trans(0,0,-dist);
+  const MVP=mul(P,mul(view,Mmodel));
+
+  // solid (carved) faces — backface cull off so interior shows
+  gl.useProgram(PL);
+  gl.uniformMatrix4fv(gl.getUniformLocation(PL,"uMVP"),false,new Float32Array(MVP));
+  gl.uniformMatrix4fv(gl.getUniformLocation(PL,"uModel"),false,new Float32Array(Mmodel));
+  gl.uniform1f(gl.getUniformLocation(PL,"uEmis"),0.0);
+  attrib(PL,"aPos",bSolidP,3);attrib(PL,"aNrm",bSolidN,3);attrib(PL,"aCol",bSolidC,3);
+  gl.drawArrays(gl.TRIANGLES,0,nSolid);
+
+  // cut caps — flat, slightly emissive so they read as solid cross-sections
+  if(showCaps && nCap>0){
+    gl.uniform1f(gl.getUniformLocation(PL,"uEmis"),0.22);
+    attrib(PL,"aPos",bCapP,3);attrib(PL,"aNrm",bCapN,3);attrib(PL,"aCol",bCapC,3);
+    gl.drawArrays(gl.TRIANGLES,0,nCap);
+  }
+
+  // wireframe
+  if(showWire && nEdge>0){
+    gl.useProgram(LN);
+    gl.uniformMatrix4fv(gl.getUniformLocation(LN,"uMVP"),false,new Float32Array(MVP));
+    attrib(LN,"aPos",bEdgeP,3);
+    gl.drawArrays(gl.LINES,0,nEdge);
+  }
+  requestAnimationFrame(frame);
+}
+
+buildSolid(carve);buildCaps();upload();resize();frame();
+</script>
+</body>
+</html>
