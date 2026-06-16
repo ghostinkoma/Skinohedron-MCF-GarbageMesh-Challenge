@@ -116,13 +116,11 @@ Skinohedron-MCF-GarbageMesh-Challenge/
 
 ## The viewer
 
-Open `viewer/viewer.html` in any modern browser.  
+🌐 **Live demo (no install needed):**  
+**https://ksf.happykoma.tech/Skinohedron-MCF-GarbageMesh-Challenge/viewer/viewer.html**
+
+Or open `viewer/viewer.html` locally in any modern browser.  
 No internet connection required. No build step. No npm.
-
-- 🌐 **WebGL sphere** — drag to rotate, harmonic field shown in coolwarm colours
-- 📊 **Log-log convergence chart** — regular vs irregular mesh, pointwise vs spectral
-- 🏷️ **Verdict cards** — per-section: sound ✅ or needs revision ⚠️
-
 ---
 
 ## Paper
