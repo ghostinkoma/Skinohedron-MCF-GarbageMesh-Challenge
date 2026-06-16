@@ -1,36 +1,189 @@
-```markdown
-# Skinohedron-MCF-GarbageMesh-Challenge
+# Kosaka Skin-o-hedron Model (KSF)
 
-**The End of Delaunay Tyranny.**  
-**cotangent Laplace dies in ~25 steps. Skinohedron lives forever.**
+**A Layered-Complex Substrate for Discrete Operators on Curved Domains**
 
-https://github.com/user/Skinohedron-MCF-GarbageMesh-Challenge/assets/123456789/demo.mp4
+*Author*: Shin-Ichiro Kosaka ([@ghostinkoma](https://github.com/ghostinkoma))  
+*Status*: Draft v2 — numerically self-reviewed  
+*License*: MIT
 
-### One-sentence summary
-We take an **extremely bad, 95 % non-Delaunay, hex-dominant, randomly distorted triangular mesh** of a unit sphere and run **implicit Mean Curvature Flow** with two different discrete Laplacians:
+---
 
-| Side       | Laplacian used         | Result after 2000 steps (t = 1.0)               |
-|------------|------------------------|--------------------------------------------------------|
-| **Left**   | Classic cotangent formula (Pinkall–Polthier / Desbrun) | **Explodes at ~25 steps** – mesh quality kills it     |
-| **Right**  | **Skinohedron operator** (trace-free dual tensor, 2025) | **Perfectly spherical, volume error < 1e-8** – lives forever |
+## What this is
 
-No remeshing • No tangential redistribution • No Delaunay enforcement • No excuses.
+This repository contains:
 
-### Why this is a historic moment
+- **A mathematical framework** (KSF) for computing on curved surfaces
+  using a class of layered polyhedral meshes and *trace-free dual tensors*
+- **A 10-page peer-review-ready paper** (`paper/`) with all claims grounded in
+  numerical experiments
+- **A complete Python verification suite** (`src/`) that reproduces every number
+  in the paper from scratch
+- **An interactive WebGL viewer** (`viewer/viewer.html`) — open in a browser,
+  no server needed
 
-For 30 years the entire Computer Graphics / Physics Simulation community believed:
+---
 
-> “If you want second-order accurate curvature on general meshes → you MUST have Delaunay triangles or acute angles.”
+## Key results (all verified by running code)
 
-The **Skinohedron operator** (Anonymous Author, 2025) proves with rigorous mathematics and now with **live running code** that a single algebraic trick — **trace-free projection of the dual tensor** — completely eliminates the O(h) error term **without any mesh quality requirement**.
+| Claim | Result |
+|---|---|
+| Trace-free projection is exact & frame-invariant | ✅ residual ≲ 1e-19 |
+| Spectral convergence on regular meshes | ✅ O(h^3.68) — super-convergent |
+| Pointwise convergence on regular meshes | ⚠️ O(h^1.06) — first order only |
+| Convergence on irregular meshes | ❌ pointwise diverges; spectral stagnates |
+| S-kernel unitarity / reciprocity / passivity (Part II) | ✅ to machine precision |
 
-This repository is the **first public, minimal, fully-working implementation** of that operator applied to the most unforgiving test imaginable: Mean Curvature Flow on garbage meshes.
+The key finding: the operator achieves **excellent eigenvalue and energy
+convergence** (near 4th order) while being honest about pointwise limits.
+This is consistent with — not a violation of — the Wardetzky et al.
+*"no free lunch"* theorem (SGP 2007).
 
-### Build & Run (≤ 30 seconds)
+---
+
+## Quick start
 
 ```bash
-git clone https://github.com/YourName/Skinohedron-MCF-GarbageMesh-Challenge.git
+git clone https://github.com/ghostinkoma/Skinohedron-MCF-GarbageMesh-Challenge.git
 cd Skinohedron-MCF-GarbageMesh-Challenge
-mkdir build && cd build
-cmake .. && make -j
-./mcf_demo
+
+pip install -r requirements.txt
+
+# Run the full verification suite (all 6 sections, ~30 seconds)
+python3 src/verification/run_all.py
+
+# Open the interactive viewer (no server needed)
+open viewer/viewer.html        # macOS
+xdg-open viewer/viewer.html   # Linux
+```
+
+---
+
+## Repository layout
+
+```
+Skinohedron-MCF-GarbageMesh-Challenge/
+│
+├── README.md               ← you are here
+├── LICENSE                 ← MIT
+├── CITATION.cff            ← "Cite this repository" metadata
+├── requirements.txt        ← numpy, scipy only
+├── .gitignore
+│
+├── paper/
+│   ├── kosaka_skin-o-hedron_revised.tex   ← LaTeX source (compile with pdflatex)
+│   └── kosaka_skin-o-hedron_revised.pdf   ← compiled PDF (10 pages)
+│
+├── src/
+│   ├── ksf/                    ← core library (import as "from ksf import mesh")
+│   │   ├── __init__.py
+│   │   ├── mesh.py             ← icosphere S_k refinement, shape diagnostics, jitter
+│   │   ├── dec.py              ← coboundary d0/d1, cotangent Laplacian L, Voronoi mass M
+│   │   ├── trace_free.py       ← trace-free dual tensors + invariance checks
+│   │   └── sph.py              ← exact spherical harmonics (ground truth)
+│   │
+│   └── verification/           ← one script per paper section
+│       ├── run_all.py          ← runs everything → results/results.json
+│       ├── s2_layered_complex.py
+│       ├── s3_dec.py
+│       ├── s4_trace_free.py
+│       ├── s6_laplacian_consistency.py   ← THE key test
+│       ├── s7_nondelaunay.py
+│       └── s10_sparameter.py
+│
+├── viewer/
+│   ├── viewer.html   ← WebGL sphere + log-log chart + verdict cards (self-contained)
+│   └── data.js       ← pre-computed mesh data (auto-generated by run_all.py)
+│
+├── results/
+│   └── results.json  ← all numerical outputs (auto-generated by run_all.py)
+│
+├── docs/
+│   ├── ARCHITECTURE.md         ← design decisions explained simply
+│   ├── NUMERICAL_FINDINGS.md   ← what the numbers mean
+│   └── FUTURE_WORK.md          ← Navier–Stokes and beyond
+│
+├── examples/
+│   └── minimal_laplacian.py    ← shortest possible usage example
+│
+├── tests/
+│   └── test_ksf.py             ← basic sanity tests (run with: python3 tests/test_ksf.py)
+│
+└── archive/
+    └── original_cpp/           ← original C++ prototype (Skinohedron.hpp, main.cop)
+```
+
+---
+
+## The viewer
+
+Open `viewer/viewer.html` in any modern browser.  
+No internet connection required. No build step. No npm.
+
+- 🌐 **WebGL sphere** — drag to rotate, harmonic field shown in coolwarm colours
+- 📊 **Log-log convergence chart** — regular vs irregular mesh, pointwise vs spectral
+- 🏷️ **Verdict cards** — per-section: sound ✅ or needs revision ⚠️
+
+---
+
+## Paper
+
+`paper/kosaka_skin-o-hedron_revised.pdf` — 10 pages, LaTeX, all claims tagged to
+verification scripts.
+
+To rebuild the PDF:
+```bash
+cd paper
+pdflatex kosaka_skin-o-hedron_revised.tex
+pdflatex kosaka_skin-o-hedron_revised.tex   # twice for references
+```
+
+---
+
+## Background
+
+For 30 years, discrete differential geometry struggled with a dilemma:
+operators that work on *any* mesh tend to be inaccurate;
+operators that are accurate tend to *require* Delaunay meshes.
+
+The Wardetzky et al. *"no free lunch"* theorem (SGP 2007) proved this is not a
+coincidence — it is mathematically unavoidable if you want *all four* of:
+local, symmetric, linearly precise, and maximum-principle preserving.
+
+KSF navigates this by being explicit about the trade-off:
+**give up pointwise maximum principle → gain spectral super-convergence**.
+The trace-free dual tensor is the mechanism that makes this trade-off clean
+and coordinate-invariant.
+
+---
+
+## Potential applications
+
+- Navier–Stokes on curved domains (aerodynamics, hemodynamics)
+- Earth system modelling (atmosphere, ocean surface)
+- Cardiac electrophysiology from CT/MRI meshes
+- Quantum lattice simulations on irregular grids
+- Semiconductor heat flow on complex 3D geometries
+
+---
+
+## Citation
+
+```bibtex
+@software{kosaka2026ksf,
+  author  = {Kosaka, Shin-Ichiro},
+  title   = {{Kosaka Skin-o-hedron Model (KSF):
+              A Layered-Complex Substrate for Discrete Operators}},
+  year    = {2026},
+  url     = {https://github.com/ghostinkoma/Skinohedron-MCF-GarbageMesh-Challenge},
+  version = {2.0.0},
+  license = {MIT}
+}
+```
+
+---
+
+## Contributing
+
+Bug reports and questions welcome via Issues.  
+For major extensions (e.g. Navier–Stokes formulation, 3D volume meshes),
+please open an Issue first to discuss.
