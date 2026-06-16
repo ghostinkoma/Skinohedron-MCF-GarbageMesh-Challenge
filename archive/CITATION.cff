@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+title: "Kosaka Skin-o-hedron Model (KSF): A Layered-Complex Substrate for Discrete Operators on Curved Domains"
+message: >-
+  If you use this software or the mathematical framework it implements,
+  please cite it using the metadata from this file.
+type: software
+authors:
+  - family-names: Kosaka
+    given-names: Shin-Ichiro
+    alias: ghostinkoma
+repository-code: >-
+  https://github.com/ghostinkoma/Skinohedron-MCF-GarbageMesh-Challenge
+abstract: >-
+  Reference implementation and full numerical verification of the Kosaka
+  Skin-o-hedron Model (KSF): a layered polyhedral-complex substrate for
+  discrete differential operators on 2-manifolds, with a 3D S-parameter
+  extension. Includes per-section Python verification scripts, a WebGL
+  interactive viewer, and a peer-review-ready LaTeX manuscript.
+keywords:
+  - discrete exterior calculus
+  - Laplace-Beltrami operator
+  - mesh quality
+  - finite elements
+  - S-parameters
+  - numerical analysis
+  - differential geometry
+  - no free lunch theorem
+license: MIT
+date-released: "2026-06-16"
+version: "2.0.0"

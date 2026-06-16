@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KSF · Verification Instrument</title>
+<style>
+  :root{
+    --ink:#0b1418; --panel:#0f1d23; --panel2:#102229;
+    --line:#1c333b; --line2:#27454e;
+    --paper:#e2eae6; --muted:#7f9a96; --faint:#54716e;
+    --amber:#e8b75a;     /* regular mesh — the operator behaves */
+    --coral:#e0654f;     /* irregular mesh — it does not */
+    --cold:#3a6fa0; --hot:#c0473a;
+    --pass:#6fae8f; --revise:#e0a05a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--ink);color:var(--paper);
+    font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:26px 22px 60px}
+
+  /* masthead */
+  header{display:flex;align-items:flex-end;justify-content:space-between;
+    gap:18px;border-bottom:1px solid var(--line);padding-bottom:16px;flex-wrap:wrap}
+  .brand{display:flex;flex-direction:column;gap:5px}
+  .kicker{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--amber)}
+  h1{margin:0;font-family:system-ui,"Helvetica Neue",Arial,sans-serif;
+    font-weight:800;letter-spacing:-.02em;font-size:30px;line-height:1}
+  h1 .thin{color:var(--muted);font-weight:500}
+  .sub{font-size:12px;color:var(--muted);max-width:52ch;line-height:1.55}
+  .meta{text-align:right;font-size:11px;color:var(--faint);line-height:1.7;white-space:nowrap}
+  .meta b{color:var(--paper);font-weight:600}
+
+  /* hero grid */
+  .grid{display:grid;grid-template-columns:1.05fr 1fr;gap:16px;margin-top:20px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    display:flex;flex-direction:column;min-width:0}
+  .card .hd{display:flex;align-items:center;justify-content:space-between;
+    padding:11px 14px;border-bottom:1px solid var(--line);gap:10px}
+  .card .hd .t{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .card .hd .t b{color:var(--paper)}
+  .tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    padding:3px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--muted)}
+
+  /* gl canvas */
+  #glwrap{position:relative;aspect-ratio:1/.86;background:
+    radial-gradient(120% 120% at 50% 18%, #13262e 0%, #0a141a 70%)}
+  #gl{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+  #gl:active{cursor:grabbing}
+  .glhint{position:absolute;left:12px;bottom:10px;font-size:10px;color:var(--faint);
+    letter-spacing:.08em;pointer-events:none}
+  .cbar{position:absolute;right:12px;top:12px;width:13px;height:120px;border-radius:3px;
+    border:1px solid var(--line2);
+    background:linear-gradient(180deg,var(--hot),#eef2ee 50%,var(--cold))}
+  .cbar span{position:absolute;right:18px;font-size:9px;color:var(--faint)}
+  .cbar .hi{top:-2px}.cbar .mid{top:54px}.cbar .lo{bottom:-2px}
+
+  /* controls */
+  .ctrl{display:flex;flex-wrap:wrap;gap:8px;padding:11px 14px;border-top:1px solid var(--line)}
+  .seg{display:inline-flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden}
+  .seg button{background:transparent;color:var(--muted);border:0;
+    font:inherit;font-size:11px;padding:6px 11px;cursor:pointer;letter-spacing:.04em}
+  .seg button+button{border-left:1px solid var(--line2)}
+  .seg button.on{background:var(--amber);color:#1a130a;font-weight:700}
+  .lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);
+    align-self:center;margin-right:2px}
+
+  /* chart */
+  #chartwrap{position:relative;flex:1;min-height:340px;padding:6px 8px 8px}
+  #chart{width:100%;height:100%;display:block}
+  .legend{display:flex;flex-wrap:wrap;gap:12px 18px;padding:0 14px 13px;font-size:11px}
+  .legend div{display:flex;align-items:center;gap:7px;color:var(--muted)}
+  .swatch{width:20px;height:0;border-top-width:2.5px;border-top-style:solid}
+  .legend b{color:var(--paper);font-weight:600}
+
+  /* verdict strip */
+  .verdicts{margin-top:18px}
+  .vh{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);
+    margin:0 0 11px;display:flex;align-items:center;gap:10px}
+  .vh::after{content:"";flex:1;height:1px;background:var(--line)}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:780px){.cards{grid-template-columns:1fr 1fr}}
+  @media(max-width:520px){.cards{grid-template-columns:1fr}}
+  .v{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:13px 14px}
+  .v .sec{font-size:10px;letter-spacing:.14em;color:var(--faint)}
+  .v .nm{font-family:system-ui,Arial,sans-serif;font-weight:700;font-size:14px;
+    margin:3px 0 9px;letter-spacing:-.01em}
+  .v .num{font-size:20px;font-weight:700;letter-spacing:-.01em}
+  .v .num small{font-size:12px;color:var(--muted);font-weight:500}
+  .v .note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:7px}
+  .chip{display:inline-block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    padding:2px 8px;border-radius:999px;margin-top:9px}
+  .chip.ok{background:rgba(111,174,143,.14);color:var(--pass);border:1px solid rgba(111,174,143,.3)}
+  .chip.rv{background:rgba(224,101,79,.14);color:var(--coral);border:1px solid rgba(224,101,79,.3)}
+
+  footer{margin-top:30px;border-top:1px solid var(--line);padding-top:16px;
+    font-size:11px;color:var(--faint);line-height:1.7}
+  footer b{color:var(--muted)}
+  a{color:var(--amber);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="kicker">Kosaka Skin-o-hedron · Verification</div>
+      <h1>Discrete Laplacian <span class="thin">on a refined sphere</span></h1>
+      <div class="sub">Every claim in the manuscript reduced to a runnable test against the
+        exact Laplace–Beltrami spectrum of S². Left: the harmonic field on the
+        Skin-o-hedron mesh (live GLSL). Right: how the operator actually converges.</div>
+    </div>
+    <div class="meta" id="meta">loading…</div>
+  </header>
+
+  <div class="grid">
+    <!-- GLSL sphere -->
+    <section class="card">
+      <div class="hd"><div class="t"><b>Substrate</b> · spherical-harmonic field</div>
+        <span class="tag" id="meshtag">S_k</span></div>
+      <div id="glwrap">
+        <canvas id="gl"></canvas>
+        <div class="cbar"><span class="hi">+</span><span class="mid">0</span><span class="lo">−</span></div>
+        <div class="glhint">drag to rotate · auto-spin</div>
+      </div>
+      <div class="ctrl">
+        <span class="lbl">level</span>
+        <div class="seg" id="levelSeg"></div>
+        <span class="lbl" style="margin-left:6px">harmonic</span>
+        <div class="seg" id="harmSeg">
+          <button data-h="Y10">Y₁ (λ2)</button>
+          <button data-h="Y2xy">Y₂ (λ6)</button>
+          <button data-h="Y3xyz">Y₃ (λ12)</button>
+        </div>
+        <div class="seg" id="wireSeg" style="margin-left:6px">
+          <button data-w="1" class="on">wire</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- convergence chart -->
+    <section class="card">
+      <div class="hd"><div class="t"><b>Result</b> · consistency vs mesh size</div>
+        <span class="tag">log–log</span></div>
+      <div id="chartwrap"><canvas id="chart"></canvas></div>
+      <div class="legend" id="legend"></div>
+    </section>
+  </div>
+
+  <!-- per-section verdicts -->
+  <div class="verdicts">
+    <p class="vh">Section verdicts</p>
+    <div class="cards" id="cards"></div>
+  </div>
+
+  <footer>
+    <b>How to read the chart.</b> Lower-left is better (smaller error at finer mesh). The
+    amber <b>spectral</b> curve plunges with a steep slope — the eigenvalues converge fast.
+    The amber <b>pointwise</b> curve only falls like h¹, and both coral (irregular-mesh)
+    curves <b>flatten or rise</b>: strong consistency is not recovered, exactly as the
+    Wardetzky–Mathur–Kälberer–Grinspun “no free lunch” theorem predicts. The takeaway for
+    the manuscript: keep the spectral/variational O(h²) claim, retire the pointwise one.
+    <br><br><b>Provenance.</b> All numbers generated by <b>run_all.py</b> (numpy/scipy),
+    no figure is hand-drawn. Geometry and fields embedded from <b>data.js</b>.
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+"use strict";
+const D = window.KSF_DATA;
+
+/* ============================ tiny mat4 ============================ */
+const M4 = {
+  persp(fov, asp, n, f){const t=1/Math.tan(fov/2);
+    return [t/asp,0,0,0, 0,t,0,0, 0,0,(f+n)/(n-f),-1, 0,0,2*f*n/(n-f),0];},
+  mul(a,b){const o=new Array(16);
+    for(let r=0;r<4;r++)for(let c=0;c<4;c++){let s=0;
+      for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s;}return o;},
+  trans(x,y,z){return[1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1];},
+  rotX(a){const s=Math.sin(a),c=Math.cos(a);
+    return[1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1];},
+  rotY(a){const s=Math.sin(a),c=Math.cos(a);
+    return[c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1];},
+  // normal matrix = upper-left 3x3 of model (orthonormal rotation -> same)
+  norm3(m){return[m[0],m[1],m[2],m[4],m[5],m[6],m[8],m[9],m[10]];}
+};
+
+/* ============================ WebGL setup ========================= */
+const glcanvas = document.getElementById("gl");
+const gl = glcanvas.getContext("webgl",{antialias:true,alpha:false});
+let glOK = !!gl;
+
+const VS = `
+attribute vec3 aPos; attribute vec3 aNrm; attribute float aVal;
+uniform mat4 uMVP; uniform mat3 uN; uniform float uLift;
+varying vec3 vN; varying float vVal;
+void main(){
+  vN = normalize(uN*aNrm); vVal = aVal;
+  vec3 p = aPos*(1.0+uLift);
+  gl_Position = uMVP*vec4(p,1.0);
+}`;
+const FS = `
+precision highp float;
+varying vec3 vN; varying float vVal;
+uniform vec3 uLight; uniform float uFlat; uniform vec3 uFlatCol;
+vec3 coolwarm(float t){ t=clamp(t,-1.0,1.0);
+  vec3 cold=vec3(0.18,0.43,0.63), mid=vec3(0.93,0.95,0.93), hot=vec3(0.75,0.28,0.23);
+  return t<0.0 ? mix(mid,cold,-t) : mix(mid,hot,t); }
+void main(){
+  vec3 N=normalize(vN);
+  float diff=max(dot(N,normalize(uLight)),0.0);
+  float rim=pow(1.0-max(dot(N,vec3(0.0,0.0,1.0)),0.0),2.5);
+  vec3 base = mix(coolwarm(vVal), uFlatCol, uFlat);
+  vec3 col = base*(0.35+0.7*diff) + rim*0.18*vec3(0.6,0.85,0.9);
+  gl_FragColor=vec4(col,1.0);
+}`;
+
+function compile(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);
+  gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))
+    {console.error(gl.getShaderInfoLog(s));return null;}return s;}
+let prog=null, loc={};
+if(glOK){
+  const vs=compile(gl.VERTEX_SHADER,VS), fs=compile(gl.FRAGMENT_SHADER,FS);
+  prog=gl.createProgram();gl.attachShader(prog,vs);gl.attachShader(prog,fs);
+  gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){console.error(gl.getProgramInfoLog(prog));glOK=false;}
+}
+if(glOK){
+  gl.useProgram(prog);
+  ["aPos","aNrm","aVal"].forEach(a=>loc[a]=gl.getAttribLocation(prog,a));
+  ["uMVP","uN","uLight","uLift","uFlat","uFlatCol"].forEach(u=>loc[u]=gl.getUniformLocation(prog,u));
+  gl.enable(gl.DEPTH_TEST);
+  gl.clearColor(0.039,0.078,0.102,1.0);
+}
+
+/* ============================ mesh buffers ======================== */
+const meshes = D.viewer_mesh;
+let state = { level: meshes[meshes.length-2].level, harm:"Y2xy", wire:true,
+              rotY:0.6, rotX:-0.35, dragging:false, autoSpin:true, lx:0, ly:0 };
+const buffers = {}; // level -> {pos,nrm,val(per harm),tri,lineIdx,nTri,nLine,maxabs}
+
+function buildBuffers(m){
+  const pos = new Float32Array(m.vertices.flat());
+  const nrm = new Float32Array(m.normals.flat());
+  const tri = new Uint16Array(m.faces.flat());
+  // unique edges for wireframe
+  const set = new Set(); const lines=[];
+  for(const [a,b,c] of m.faces){
+    for(const [u,v] of [[a,b],[b,c],[c,a]]){
+      const k=u<v?u*100000+v:v*100000+u;
+      if(!set.has(k)){set.add(k);lines.push(u,v);}
+    }
+  }
+  const posB=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,posB);gl.bufferData(gl.ARRAY_BUFFER,pos,gl.STATIC_DRAW);
+  const nrmB=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,nrmB);gl.bufferData(gl.ARRAY_BUFFER,nrm,gl.STATIC_DRAW);
+  const triB=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,triB);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,tri,gl.STATIC_DRAW);
+  const lineB=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,lineB);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(lines),gl.STATIC_DRAW);
+  const valB={};
+  for(const name of Object.keys(m.fields)){
+    const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(m.fields[name]),gl.STATIC_DRAW);
+    valB[name]=vb;
+  }
+  buffers[m.level]={posB,nrmB,triB,lineB,valB,nTri:tri.length,nLine:lines.length};
+}
+if(glOK) meshes.forEach(buildBuffers);
+
+function resizeGL(){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const w=glcanvas.clientWidth, h=glcanvas.clientHeight;
+  if(glcanvas.width!==w*dpr||glcanvas.height!==h*dpr){
+    glcanvas.width=w*dpr;glcanvas.height=h*dpr;gl.viewport(0,0,glcanvas.width,glcanvas.height);}
+}
+function draw(){
+  if(!glOK)return;
+  resizeGL();
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  const asp=glcanvas.width/glcanvas.height;
+  const P=M4.persp(0.95,asp,0.1,20);
+  const V=M4.trans(0,0,-3.05);
+  const Mmat=M4.mul(M4.rotY(state.rotY),M4.rotX(state.rotX));
+  const MVP=M4.mul(P,M4.mul(V,Mmat));
+  const b=buffers[state.level];
+  gl.useProgram(prog);
+  gl.uniformMatrix4fv(loc.uMVP,false,new Float32Array(MVP));
+  gl.uniformMatrix3fv(loc.uN,false,new Float32Array(M4.norm3(Mmat)));
+  gl.uniform3f(loc.uLight,0.4,0.6,0.8);
+  // filled field
+  gl.uniform1f(loc.uLift,0.0); gl.uniform1f(loc.uFlat,0.0);
+  bindAttr(loc.aPos,b.posB,3); bindAttr(loc.aNrm,b.nrmB,3);
+  bindAttr(loc.aVal,b.valB[state.harm],1);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,b.triB);
+  gl.drawElements(gl.TRIANGLES,b.nTri,gl.UNSIGNED_SHORT,0);
+  // wireframe (lifted slightly so it floats above faces)
+  if(state.wire){
+    gl.uniform1f(loc.uLift,0.004); gl.uniform1f(loc.uFlat,1.0);
+    gl.uniform3f(loc.uFlatCol,0.05,0.11,0.13);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,b.lineB);
+    gl.drawElements(gl.LINES,b.nLine,gl.UNSIGNED_SHORT,0);
+  }
+}
+function bindAttr(l,buf,size){gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,size,gl.FLOAT,false,0,0);}
+
+function loop(){
+  if(state.autoSpin && !state.dragging) state.rotY+=0.0045;
+  draw(); requestAnimationFrame(loop);
+}
+
+/* drag to rotate */
+glcanvas.addEventListener("pointerdown",e=>{state.dragging=true;state.autoSpin=false;
+  state.lx=e.clientX;state.ly=e.clientY;glcanvas.setPointerCapture(e.pointerId);});
+glcanvas.addEventListener("pointermove",e=>{if(!state.dragging)return;
+  state.rotY+=(e.clientX-state.lx)*0.01;state.rotX+=(e.clientY-state.ly)*0.01;
+  state.rotX=Math.max(-1.4,Math.min(1.4,state.rotX));
+  state.lx=e.clientX;state.ly=e.clientY;});
+glcanvas.addEventListener("pointerup",()=>{state.dragging=false;});
+if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches) state.autoSpin=false;
+
+/* ============================ controls ============================ */
+const levelSeg=document.getElementById("levelSeg");
+meshes.forEach(m=>{const btn=document.createElement("button");
+  btn.textContent="k="+m.level; btn.dataset.level=m.level;
+  if(m.level===state.level)btn.classList.add("on");
+  btn.onclick=()=>{state.level=m.level;sync();updMeshTag();};levelSeg.appendChild(btn);});
+document.querySelectorAll("#harmSeg button").forEach(b=>{
+  if(b.dataset.h===state.harm)b.classList.add("on");
+  b.onclick=()=>{state.harm=b.dataset.h;sync();};});
+document.querySelector("#wireSeg button").onclick=function(){
+  state.wire=!state.wire;this.classList.toggle("on",state.wire);};
+function sync(){
+  levelSeg.querySelectorAll("button").forEach(b=>b.classList.toggle("on",+b.dataset.level===state.level));
+  document.querySelectorAll("#harmSeg button").forEach(b=>b.classList.toggle("on",b.dataset.h===state.harm));
+}
+function updMeshTag(){const m=meshes.find(x=>x.level===state.level);
+  document.getElementById("meshtag").textContent=`S_${m.level} · ${m.n} verts · h=${m.h.toFixed(3)}`;}
+
+/* ============================ chart =============================== */
+const cc=document.getElementById("chart"), cx=cc.getContext("2d");
+const S6=D.s6_consistency;
+const series=[
+  {name:"regular · spectral", reg:1, pts:zip(S6.regular.h,S6.regular.spectral), col:"#e8b75a", dash:[], slope:S6.regular.spectral_order},
+  {name:"regular · pointwise",reg:1, pts:zip(S6.regular.h,S6.regular.pointwise),col:"#e8b75a", dash:[5,4], slope:S6.regular.pointwise_order},
+  {name:"irregular · spectral",reg:0,pts:zip(S6.irregular.h,S6.irregular.spectral),col:"#e0654f", dash:[], slope:S6.irregular.spectral_order},
+  {name:"irregular · pointwise",reg:0,pts:zip(S6.irregular.h,S6.irregular.pointwise),col:"#e0654f", dash:[5,4], slope:S6.irregular.pointwise_order},
+];
+function zip(a,b){return a.map((x,i)=>[x,b[i]]);}
+function drawChart(){
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const w=cc.clientWidth,h=cc.clientHeight;
+  cc.width=w*dpr;cc.height=h*dpr;cx.setTransform(dpr,0,0,dpr,0,0);
+  cx.clearRect(0,0,w,h);
+  const pad={l:52,r:14,t:14,b:38};
+  const all=series.flatMap(s=>s.pts);
+  const xs=all.map(p=>p[0]), ys=all.map(p=>p[1]).filter(v=>v>0);
+  const xmin=Math.min(...xs)*0.8, xmax=Math.max(...xs)*1.15;
+  const ymin=Math.min(...ys)/2, ymax=Math.max(...ys)*2;
+  const LX=v=>pad.l+(Math.log10(v)-Math.log10(xmin))/(Math.log10(xmax)-Math.log10(xmin))*(w-pad.l-pad.r);
+  const LY=v=>h-pad.b-(Math.log10(v)-Math.log10(ymin))/(Math.log10(ymax)-Math.log10(ymin))*(h-pad.t-pad.b);
+  // grid (decades)
+  cx.font="10px ui-monospace,monospace"; cx.textAlign="center";
+  for(let e=Math.ceil(Math.log10(ymin));e<=Math.floor(Math.log10(ymax));e++){
+    const y=LY(10**e); cx.strokeStyle="#16292f";cx.lineWidth=1;
+    cx.beginPath();cx.moveTo(pad.l,y);cx.lineTo(w-pad.r,y);cx.stroke();
+    cx.fillStyle="#54716e";cx.textAlign="right";cx.fillText("10"+sup(e),pad.l-8,y+3);}
+  for(let e=Math.ceil(Math.log10(xmin));e<=Math.floor(Math.log10(xmax));e++){
+    const x=LX(10**e); cx.strokeStyle="#16292f";
+    cx.beginPath();cx.moveTo(x,pad.t);cx.lineTo(x,h-pad.b);cx.stroke();
+    cx.fillStyle="#54716e";cx.textAlign="center";cx.fillText("10"+sup(e),x,h-pad.b+15);}
+  cx.fillStyle="#7f9a96";cx.textAlign="center";
+  cx.fillText("mesh size  h",(pad.l+w-pad.r)/2,h-6);
+  cx.save();cx.translate(13,(pad.t+h-pad.b)/2);cx.rotate(-Math.PI/2);
+  cx.fillText("relative error",0,0);cx.restore();
+  // reference slopes h^1 and h^2 (guide lines, anchored at right)
+  const ax=xmax*0.9, ay=ymax*0.5;
+  [[1,"h¹"],[2,"h²"]].forEach(([m,lab])=>{
+    cx.strokeStyle="#2c4a52";cx.setLineDash([2,3]);cx.lineWidth=1;cx.beginPath();
+    const x0=LX(xmin*1.2),x1=LX(ax);
+    const y1=LY(ay), y0=LY(ay*(xmin*1.2/ax)**m);
+    cx.moveTo(x0,y0);cx.lineTo(x1,y1);cx.stroke();cx.setLineDash([]);
+    cx.fillStyle="#3f5d5a";cx.textAlign="left";cx.fillText(lab,x1+2,y1);});
+  // series
+  series.forEach(s=>{
+    cx.strokeStyle=s.col;cx.lineWidth=2.4;cx.setLineDash(s.dash);
+    cx.beginPath();s.pts.forEach((p,i)=>{const X=LX(p[0]),Y=LY(p[1]);
+      i?cx.lineTo(X,Y):cx.moveTo(X,Y);});cx.stroke();cx.setLineDash([]);
+    s.pts.forEach(p=>{cx.fillStyle=s.col;cx.beginPath();
+      cx.arc(LX(p[0]),LY(p[1]),s.dash.length?2.2:3.1,0,7);cx.fill();});
+  });
+}
+function sup(n){const m={"-":"⁻","0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹"};
+  return String(n).split("").map(c=>m[c]||c).join("");}
+
+const legend=document.getElementById("legend");
+series.forEach(s=>{const d=document.createElement("div");
+  const sw=`<span class="swatch" style="border-top-color:${s.col};border-top-style:${s.dash.length?'dashed':'solid'}"></span>`;
+  d.innerHTML=`${sw}<span>${s.name} · <b>~h^${s.slope.toFixed(1)}</b></span>`;
+  legend.appendChild(d);});
+
+/* ============================ verdict cards ======================= */
+const fmt=x=>{const a=Math.abs(x);
+  return (a!==0&&(a<1e-3||a>=1e4))?x.toExponential(1):(+x).toPrecision(3);};
+const cards=[
+  {sec:"§2 · substrate",nm:"Skin-o-hedron axioms",
+   num:`h^${D.s2_layered_complex.area_defect_order.toFixed(1)}`,unit:"metric defect",
+   ok:1,note:`shape quality ≥ ${fmt(D.s2_layered_complex.q_min_global)} uniformly → well-posed refinement family.`},
+  {sec:"§3 · DEC",nm:"de Rham complex",
+   num:fmt(D.s3_dec.max_dd_residual),unit:"max |d∘d|",
+   ok:1,note:"the exterior-calculus scaffold closes to machine precision. Textbook, correct."},
+  {sec:"§4–5 · tensor",nm:"trace-free projection",
+   num:fmt(D.s4_trace_free.max_trace_residual),unit:"max |tr E|",
+   ok:1,note:"trace-free + frame-invariant to 1e-19. The ½ factor is right (tangent space is 2-D)."},
+  {sec:"§6 · operator",nm:"pointwise consistency",
+   num:`h^${D.s6_consistency.regular.pointwise_order.toFixed(1)}`,unit:"best mesh",
+   ok:0,note:"Theorem 5.x / Prop 6.x claim O(h²) pointwise — measured O(h¹). Restate as weak/spectral."},
+  {sec:"§6 · operator",nm:"spectral convergence",
+   num:`h^${D.s6_consistency.regular.spectral_order.toFixed(1)}`,unit:"eigenvalues",
+   ok:1,note:"the USEFUL claim holds and is super-convergent. This is the statement worth keeping."},
+  {sec:"§II · S-params",nm:"unitarity / reciprocity",
+   num:fmt(D.s10_sparameter.rows[D.s10_sparameter.rows.length-1].unitarity_res),unit:"residual",
+   ok:1,note:"lossless reciprocal S-kernel discretises cleanly; gains = 1. Part II is implementable as written."},
+];
+const cwrap=document.getElementById("cards");
+cards.forEach(c=>{const el=document.createElement("div");el.className="v";
+  el.innerHTML=`<div class="sec">${c.sec}</div><div class="nm">${c.nm}</div>
+    <div class="num">${c.num} <small>${c.unit}</small></div>
+    <div class="note">${c.note}</div>
+    <span class="chip ${c.ok?'ok':'rv'}">${c.ok?'sound':'revise'}</span>`;
+  cwrap.appendChild(el);});
+
+/* ============================ meta + boot ========================= */
+document.getElementById("meta").innerHTML=
+  `KSF reference suite · <b>v${D.version}</b><br>`+
+  `${meshes.length} mesh levels · S² ground truth<br>`+
+  `numpy/scipy · no fitted figures`;
+updMeshTag();
+
+if(glOK){loop();}else{
+  document.getElementById("glwrap").innerHTML=
+    '<div style="padding:40px;color:#7f9a96;font-size:12px">WebGL unavailable in this browser — the chart and verdicts below still work.</div>';
+}
+drawChart();
+window.addEventListener("resize",drawChart);
+</script>
+</body>
+</html>
