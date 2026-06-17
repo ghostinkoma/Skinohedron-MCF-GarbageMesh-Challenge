@@ -93,3 +93,31 @@ def kuhn_cube(n=4):
 
 def cube_boundary_mask(V):
     return (np.isclose(V, 0.0) | np.isclose(V, 1.0)).any(axis=1)
+
+
+def kuhn_box(nx, ny, nz, Lx=2.0):
+    """A rectangular box [−Lx/2, Lx/2] × [0, wy] × [0, wz] meshed by congruent
+    Kuhn tetrahedra of edge h = Lx/nx (wy = ny·h, wz = nz·h). Used for the
+    quasi-1D plane-wave channel of theory/01c. Same congruent cells as kuhn_cube;
+    only the aspect ratio differs (long in x, thin in y,z)."""
+    h = Lx / nx
+
+    def idx(i, j, k):
+        return (i * (ny + 1) + j) * (nz + 1) + k
+
+    V = np.array([[i * h, j * h, k * h]
+                  for i in range(nx + 1) for j in range(ny + 1)
+                  for k in range(nz + 1)], float)
+    e = np.eye(3, dtype=int)
+    T = []
+    for i in range(nx):
+        for j in range(ny):
+            for k in range(nz):
+                base = np.array([i, j, k])
+                for sg in itertools.permutations(range(3)):
+                    cur = base.copy(); path = [cur.copy()]
+                    for d in sg:
+                        cur = cur + e[d]; path.append(cur.copy())
+                    T.append([idx(*p) for p in path])
+    V[:, 0] -= Lx / 2.0     # centre x at 0 so the interface sits at x=0
+    return V, np.array(T, int)

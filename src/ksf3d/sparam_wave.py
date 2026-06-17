@@ -92,6 +92,36 @@ class PortComplex:
         pp = self.partner[self.partner]
         assert np.array_equal(pp, np.arange(self.nP)), "partner is not an involution"
 
+    def make_periodic(self, axes_extents, tol=1e-9):
+        """Re-pair boundary ports on opposite walls into periodic (interior)
+        pairs, for the plane-wave channel of theory/01c. `axes_extents` is a list
+        of (axis, lo, hi). A boundary port on the `lo` plane is matched to the one
+        on the `hi` plane with the same other two coordinates. This is a
+        boundary-condition variant of the partner map Π, NOT a new operator; the
+        update U = C S is unchanged. Matched pairs get equal-Z free transmission
+        (R=0, T=1) via Connect, since they are added to interior_facets."""
+        # face centroids per port
+        fc = np.zeros((self.nP, 3))
+        for s, tet in enumerate(self.T):
+            P = self.V[tet]
+            for k, comb in enumerate(FACE_COMBOS):
+                fc[self.pid(s, k)] = P[list(comb)].mean(axis=0)
+        for (ax, lo, hi) in axes_extents:
+            bnd = np.where(self.is_boundary)[0]
+            others = [a for a in range(3) if a != ax]
+            key = lambda p: (round(fc[p, others[0]], 6), round(fc[p, others[1]], 6))
+            himap = {key(p): p for p in bnd if abs(fc[p, ax] - hi) < tol}
+            for p in [q for q in bnd if abs(fc[q, ax] - lo) < tol]:
+                q = himap.get(key(p))
+                if q is not None:
+                    self.partner[p] = q
+                    self.partner[q] = p
+                    self.is_boundary[p] = False
+                    self.is_boundary[q] = False
+                    self.facet_of[q] = self.facet_of[p]
+                    self.interior_facets.append((p, q))
+        self._assert_involution()
+
 
 # --------------------------------------------------------------------------- #
 #  scatter operator S  (01b §3)                                               #
