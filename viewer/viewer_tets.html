@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KSF · uniform (equal-spaced) tetrahedra</title>
+<style>
+:root{--bg:#0b1418;--ink:#cfe3e8;--dim:#7fa0a8;--amber:#e8b75a;--coral:#e0654f;--line:#1c2c33}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace}
+#wrap{display:flex;flex-direction:column;height:100%}
+header{padding:14px 18px;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:15px;letter-spacing:.04em;font-weight:600}
+header .sub{margin-top:3px;font-size:12px;color:var(--dim)}
+#stage{position:relative;flex:1;min-height:0}
+canvas{display:block;width:100%;height:100%}
+#ctrl{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+button{font:inherit;font-size:11px;color:var(--ink);background:#0f1a20;
+  border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+button.on{border-color:var(--amber);color:var(--amber)}
+button:active{transform:translateY(1px)}
+#explodeRow{display:flex;align-items:center;gap:6px}
+input[type=range]{width:120px}
+#hud{position:absolute;left:14px;bottom:14px;font-size:11px;color:var(--dim);
+  background:rgba(11,20,24,.82);padding:8px 10px;border:1px solid var(--line);
+  border-radius:6px;line-height:1.6;max-width:300px}
+#hud b{color:var(--ink)} .a{color:var(--amber)} .c{color:var(--coral)}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>Kosaka Skin-o-hedron — uniform (equally-spaced) tetrahedra</h1>
+    <div class="sub">
+      congruent Kuhn lattice (<span class="a">q = 0.717 at every scale</span>) ·
+      the uniform mesh that restores <span class="a">O(h²)</span> ·
+      <span class="c">S-parameter tetrahedron</span> (4 equal ports)
+    </div>
+  </header>
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <div id="ctrl">
+      <button id="bSpin" class="on">auto-rotate: on</button>
+      <button id="bWire" class="on">wireframe: on</button>
+      <div id="explodeRow"><span>explode</span><input id="rExplode" type="range" min="0" max="100" value="22"></div>
+      <button id="bMode">show: lattice</button>
+    </div>
+    <div id="hud">
+      <b>What you are seeing</b><br>
+      <span class="a">lattice</span> — every tetrahedron is the <b>same shape</b>
+      (6 congruent Kuhn tets per cube). Drag the <b>explode</b> slider to pull the
+      cells apart and see they are identical.<br>
+      <span class="c">S-parameter</span> — one regular tetrahedron with 4 ports
+      at its vertices, the maximally equal-spaced 4-port (109.47° apart).<br>
+      drag to rotate · scroll to zoom
+    </div>
+  </div>
+</div>
+<script src="data_uniform.js"></script>
+<script>
+"use strict";
+const D = window.KSF_TETS;
+const cv = document.getElementById("gl");
+const gl = cv.getContext("webgl", {antialias:true, depth:true, alpha:false});
+if(!gl){document.body.innerHTML="<p style='padding:20px'>WebGL unavailable.</p>";}
+
+/* ---------- tiny mat4 ---------- */
+const M = {
+  ident:()=>[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1],
+  mul:(a,b)=>{const o=new Array(16);
+    for(let r=0;r<4;r++)for(let c=0;c<4;c++){let s=0;
+      for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s;}return o;},
+  persp:(fov,asp,n,f)=>{const t=1/Math.tan(fov/2);
+    return [t/asp,0,0,0, 0,t,0,0, 0,0,(f+n)/(n-f),-1, 0,0,2*f*n/(n-f),0];},
+  trans:(x,y,z)=>[1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1],
+  rotX:a=>{const c=Math.cos(a),s=Math.sin(a);return [1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1];},
+  rotY:a=>{const c=Math.cos(a),s=Math.sin(a);return [c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1];},
+};
+
+/* ---------- geometry from data ---------- */
+const V = D.verts, TET = D.tets, nT = D.nT;
+const PV = D.port_verts, PF = D.port_faces;
+function v3(arr,i){return [arr[3*i],arr[3*i+1],arr[3*i+2]];}
+function sub(a,b){return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
+function cross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
+function norm(a){const l=Math.hypot(a[0],a[1],a[2])||1;return [a[0]/l,a[1]/l,a[2]/l];}
+
+// build per-tet triangle soup: pos, flat normal, tet centroid, color seed
+function buildTris(verts, tets, count){
+  const pos=[],nrm=[],cen=[],seed=[];
+  const faceIdx=[[0,1,2],[0,1,3],[0,2,3],[1,2,3]];
+  for(let t=0;t<count;t++){
+    const a=v3(verts,tets[4*t]),b=v3(verts,tets[4*t+1]),
+          c=v3(verts,tets[4*t+2]),d=v3(verts,tets[4*t+3]);
+    const P=[a,b,c,d];
+    const ctr=[(a[0]+b[0]+c[0]+d[0])/4,(a[1]+b[1]+c[1]+d[1])/4,(a[2]+b[2]+c[2]+d[2])/4];
+    const sd=(Math.sin(t*12.9898)*43758.5453)%1;
+    for(const f of faceIdx){
+      const p0=P[f[0]],p1=P[f[1]],p2=P[f[2]];
+      let n=norm(cross(sub(p1,p0),sub(p2,p0)));
+      // orient outward from centroid
+      const mid=[(p0[0]+p1[0]+p2[0])/3,(p0[1]+p1[1]+p2[1])/3,(p0[2]+p1[2]+p2[2])/3];
+      if((mid[0]-ctr[0])*n[0]+(mid[1]-ctr[1])*n[1]+(mid[2]-ctr[2])*n[2]<0) n=[-n[0],-n[1],-n[2]];
+      for(const p of [p0,p1,p2]){pos.push(p[0],p[1],p[2]);nrm.push(n[0],n[1],n[2]);
+        cen.push(ctr[0],ctr[1],ctr[2]);seed.push(sd);}
+    }
+  }
+  return {pos:new Float32Array(pos),nrm:new Float32Array(nrm),
+          cen:new Float32Array(cen),seed:new Float32Array(seed),count:pos.length/3};
+}
+// build per-tet edge lines (6 edges)
+function buildLines(verts, tets, count){
+  const pos=[],cen=[];
+  const E=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
+  for(let t=0;t<count;t++){
+    const P=[v3(verts,tets[4*t]),v3(verts,tets[4*t+1]),v3(verts,tets[4*t+2]),v3(verts,tets[4*t+3])];
+    const ctr=[(P[0][0]+P[1][0]+P[2][0]+P[3][0])/4,(P[0][1]+P[1][1]+P[2][1]+P[3][1])/4,(P[0][2]+P[1][2]+P[2][2]+P[3][2])/4];
+    for(const e of E)for(const k of e){const p=P[k];pos.push(p[0],p[1],p[2]);cen.push(ctr[0],ctr[1],ctr[2]);}
+  }
+  return {pos:new Float32Array(pos),cen:new Float32Array(cen),count:pos.length/3};
+}
+
+const latTris = buildTris(V,TET,nT);
+const latLines= buildLines(V,TET,nT);
+// port tet (single regular tetra) — flatten its 4 faces as one tet
+const portTris = buildTris(PV.concat(), [0,1,2,3], 1);
+const portLines= buildLines(PV.concat(), [0,1,2,3], 1);
+
+/* ---------- shaders (GLSL) ---------- */
+const VS=`
+attribute vec3 aPos; attribute vec3 aNrm; attribute vec3 aCen; attribute float aSeed;
+uniform mat4 uMVP, uModel; uniform float uExplode;
+varying vec3 vN; varying float vSeed; varying vec3 vWorld;
+void main(){
+  vec3 p = mix(aCen, aPos, uExplode);           // shrink toward centroid
+  gl_Position = uMVP * vec4(p,1.0);
+  vN = mat3(uModel) * aNrm; vSeed = aSeed; vWorld = p;
+}`;
+const FS=`
+precision mediump float;
+varying vec3 vN; varying float vSeed; varying vec3 vWorld;
+uniform vec3 uA, uB; uniform float uFlat;
+void main(){
+  vec3 N = normalize(vN);
+  vec3 L = normalize(vec3(0.4,0.8,0.6));
+  float d = max(dot(N,L),0.0)*0.75 + 0.25;
+  vec3 col = mix(uA, uB, clamp(vSeed*0.5+0.5,0.0,1.0));
+  gl_FragColor = vec4(col*d, 1.0);
+}`;
+const VSL=`
+attribute vec3 aPos; attribute vec3 aCen; uniform mat4 uMVP; uniform float uExplode;
+void main(){ vec3 p = mix(aCen, aPos, uExplode); gl_Position = uMVP*vec4(p,1.0); }`;
+const FSL=`precision mediump float; uniform vec3 uC; void main(){ gl_FragColor=vec4(uC,1.0);}`;
+
+function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(s);return s;}
+function prog(vs,fs){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));
+  gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw gl.getProgramInfoLog(p);return p;}
+const pTri=prog(VS,FS), pLine=prog(VSL,FSL);
+
+function buf(data){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);
+  gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);return b;}
+function mkTriBufs(g){return {pos:buf(g.pos),nrm:buf(g.nrm),cen:buf(g.cen),seed:buf(g.seed),count:g.count};}
+function mkLineBufs(g){return {pos:buf(g.pos),cen:buf(g.cen),count:g.count};}
+const LT=mkTriBufs(latTris), LL=mkLineBufs(latLines),
+      PT=mkTriBufs(portTris), PL=mkLineBufs(portLines);
+
+/* ---------- state ---------- */
+let spin=true, wire=true, mode=0; // 0=lattice 1=sparameter
+let rx=-0.5, ry=0.6, dist=3.2, dragging=false, lx=0, ly=0;
+const rExp=document.getElementById("rExplode");
+function explodeVal(){return 0.45 + 0.55*(rExp.value/100);} // 0.45..1.0
+
+document.getElementById("bSpin").onclick=e=>{spin=!spin;e.target.classList.toggle("on",spin);e.target.textContent="auto-rotate: "+(spin?"on":"off");};
+document.getElementById("bWire").onclick=e=>{wire=!wire;e.target.classList.toggle("on",wire);e.target.textContent="wireframe: "+(wire?"on":"off");};
+document.getElementById("bMode").onclick=e=>{mode=1-mode;e.target.textContent="show: "+(mode?"S-parameter":"lattice");};
+cv.addEventListener("mousedown",e=>{dragging=true;lx=e.clientX;ly=e.clientY;});
+window.addEventListener("mouseup",()=>dragging=false);
+window.addEventListener("mousemove",e=>{if(!dragging)return;ry+=(e.clientX-lx)*0.01;rx+=(e.clientY-ly)*0.01;lx=e.clientX;ly=e.clientY;});
+cv.addEventListener("wheel",e=>{dist*=(1+Math.sign(e.deltaY)*0.08);dist=Math.max(1.6,Math.min(8,dist));e.preventDefault();},{passive:false});
+
+const hexrgb=h=>[parseInt(h.slice(1,3),16)/255,parseInt(h.slice(3,5),16)/255,parseInt(h.slice(5,7),16)/255];
+const A1=hexrgb("#3b6ea8"), B1=hexrgb("#e8b75a"); // lattice ramp blue->amber
+const A2=hexrgb("#2f5c7a"), B2=hexrgb("#e0654f"); // port tetra
+const LINECOL=hexrgb("#1c2c33"), PORTLINE=hexrgb("#e8b75a");
+
+function attrib(p,name,b,size){const l=gl.getAttribLocation(p,name);if(l<0)return;
+  gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,size,gl.FLOAT,false,0,0);}
+
+function drawTris(p,B,mvp,model,exv,ca,cb){
+  gl.useProgram(p);
+  attrib(p,"aPos",B.pos,3);attrib(p,"aNrm",B.nrm,3);attrib(p,"aCen",B.cen,3);attrib(p,"aSeed",B.seed,1);
+  gl.uniformMatrix4fv(gl.getUniformLocation(p,"uMVP"),false,mvp);
+  gl.uniformMatrix4fv(gl.getUniformLocation(p,"uModel"),false,model);
+  gl.uniform1f(gl.getUniformLocation(p,"uExplode"),exv);
+  gl.uniform3fv(gl.getUniformLocation(p,"uA"),ca);gl.uniform3fv(gl.getUniformLocation(p,"uB"),cb);
+  gl.drawArrays(gl.TRIANGLES,0,B.count);
+}
+function drawLines(B,mvp,exv,col){
+  gl.useProgram(pLine);
+  attrib(pLine,"aPos",B.pos,3);attrib(pLine,"aCen",B.cen,3);
+  gl.uniformMatrix4fv(gl.getUniformLocation(pLine,"uMVP"),false,mvp);
+  gl.uniform1f(gl.getUniformLocation(pLine,"uExplode"),exv);
+  gl.uniform3fv(gl.getUniformLocation(pLine,"uC"),col);
+  gl.drawArrays(gl.LINES,0,B.count);
+}
+
+function resize(){const dpr=Math.min(devicePixelRatio||1,2);
+  cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;gl.viewport(0,0,cv.width,cv.height);}
+window.addEventListener("resize",resize);resize();
+
+gl.enable(gl.DEPTH_TEST); gl.clearColor(...hexrgb("#0b1418"),1);
+
+function frame(){
+  if(spin) ry+=0.004;
+  const proj=M.persp(1.0, cv.width/cv.height, 0.05, 50);
+  const model=M.mul(M.rotY(ry),M.rotX(rx));
+  const view=M.trans(0,0,-dist);
+  const mvp=M.mul(proj,M.mul(view,model));
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+
+  if(mode===0){
+    drawTris(pTri,LT,mvp,model,explodeVal(),A1,B1);
+    if(wire) drawLines(LL,mvp,explodeVal(),hexrgb("#26414b"));
+  }else{
+    gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    drawTris(pTri,PT,mvp,model,1.0,A2,B2);
+    drawLines(PL,mvp,1.0,PORTLINE);
+    gl.disable(gl.BLEND);
+  }
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>
