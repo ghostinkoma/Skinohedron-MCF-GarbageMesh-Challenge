@@ -1,12 +1,15 @@
 # 01d · Directional Source (closing Step 1.5)
 
-**Status:** theory / method (no code yet). Workflow theory → model → code. This
-is the thin addition that closes the one open item of
-[`01c`](01c_planewave_interface.md): the simple port injection was not a clean
-`+x` travelling wave (spurious back-radiation, energy accounting < 1), so the
-reflected-energy fraction did not match `R²`. Here we specify a **directional
-source** that injects a wave moving in `+x` only, so reflection/transmission can
-be measured cleanly against `R²/T²`.
+**Status:** theory / method — **superseded in part by the implementation result
+in §7 (added after coding).** Workflow theory → model → code. This document
+*designed* a TF/SF directional source to close the one open item of
+[`01c`](01c_planewave_interface.md). On implementation, the literal one-way source
+did **not** work on the current geometry-blind node, but the reflectance `R²` was
+nevertheless closed by a geometry-robust **total-energy** measure. Read §1–§6 as
+the original design, then §7 for what the code actually established. The reflectance
+item of `01c` is now **CLOSED**; the directional source itself is **deferred to
+`01e`** (the geometry fix). Verified by
+[`sparam_reflectance_verify.py`](../src/verification3d/sparam_reflectance_verify.py).
 
 **No new physics.** The update `𝒰 = 𝒞𝒮` of `01b` is unchanged; the channel of
 `01c` is unchanged. We only change *how energy is introduced*, using the
@@ -137,17 +140,70 @@ dispersion, or accounting) — no green checkmark without the numbers.
 
 ---
 
+## 7. What the code established (added after implementation)
+
+The design of §1–§6 was implemented and run
+([`sparam_reflectance_verify.py`](../src/verification3d/sparam_reflectance_verify.py)).
+Two findings, recorded honestly because they revise this document:
+
+**7.1 The literal one-way TF/SF source did not work on the current node.**
+The simple add/subtract of §2 (TFSF) failed to produce a clean `+x` wave: the
+matched control `Z₂=Z₁` still reflected ~50%, and a per-face flux monitor showed a
+spurious ~0.17 reflection with no interface. Root cause — the same one raised
+against the model and treated in [`01e`](01e_geometric_consistency.md): the node
+`S_wave = 2P₀−I` is **geometry-blind**. A tetrahedron's four faces are not
+axis-aligned, so the node redistributes energy isotropically and there is no clean
+"`+x` port" to inject the incident wave into. Direction-resolved quantities
+(one-way source, per-face flux) are therefore contaminated by face orientation.
+**The directional source is consequently deferred until `01e` puts the face
+geometry `(n_k, A_k)` into the operator.**
+
+**7.2 The reflectance `R²` was closed by a geometry-robust total-energy measure.**
+While *direction-resolved* quantities are contaminated, the *total* absorbed
+energy at a boundary plane is geometry-robust (it averages over the tetrahedral
+face orientations). With a symmetric monopole plane source in medium 1 (which
+excites only the `+1` symmetric mode of `S_wave` and so radiates `±x` exactly
+half-and-half in a uniform medium) and absorbing ends, exact energy bookkeeping
+gives
+
+```
+E_left = ½ + ½R² ,   E_right = ½T² ,   refl_frac = E_left/(E_left+E_right) = ½ + ½R²
+⇒  R²_measured = 2·refl_frac − 1 .
+```
+
+Measured results (verification script), `R²` recovered vs theory:
+
+| Z₁\|Z₂ | R²_theory | nx=20 err | nx=40 err | nx=80 err |
+|---|---|---|---|---|
+| 1\|0.5  | 0.111111 | 2.4e−2 | 3.9e−5 | 4.2e−8 |
+| 1\|0.3  | 0.289941 | 1.9e−2 | 3.1e−5 | 3.3e−8 |
+| 1\|0.01 | 0.960788 | 1.1e−3 | 1.7e−6 | 1.8e−9 |
+| matched | 0.000000 | 2.7e−2 | 4.4e−5 | 4.7e−8 (floor → 0) |
+
+`R²` is recovered to ~1e−8 by nx=80, converging fast, and the matched-control
+spurious floor vanishes under refinement. **Conclusion: the material reflectance
+model `R=(Z₂−Z₁)/(Z₂+Z₁)` is verified as a physical observable, and the open
+reflectance item of `01c` is CLOSED** — by a geometry-robust total-energy measure,
+not by the one-way source originally designed here.
+
+**Net effect on the roadmap.** Step 1.5's *quantitative reflectance* question is
+settled. The *directional source* (and the per-direction wave-speed it would
+measure) is folded into `01e`, since both need the face geometry in the operator.
+
+---
+
 ### Roadmap position
 
 ```
 [Step 1]   S-parameter wave        01, 01b, verify ✓
-[Step 1.5] plane-wave interface     01c (channel ✓, R² open)
-           directional source       01d  ← THIS DOCUMENT (theory)
-           01d-code                 ← next, on approval: closes R² measurement
+[Step 1.5] plane-wave interface     01c (channel ✓)
+           directional source       01d (designed; one-way source deferred to 01e)
+           reflectance R²           CLOSED ✓ (total-energy measure, §7)
+[Step 1e]  geometric consistency    01e (resolves geometry-blind node;
+                                         restores directional quantities)
 [Step 2]   pressure / tank
 [Step 3]   fluid dynamics
 ```
 
-_Next artifact, on approval: code adding the TF/SF source term to the channel and
-re-measuring `E_refl/E_inc` vs `R²`, with the §5 acceptance asserts. Reuses the
-`01b` engine and `01c` channel unchanged; only the source is added._
+_The one-way source is revisited after `01e` makes the node geometry-aware. The
+reflectance verification (§7) stands on its own and needs no further work._
