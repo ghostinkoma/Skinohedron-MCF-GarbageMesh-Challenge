@@ -20,6 +20,21 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 from ksf3d.mesh3d_uniform import kuhn_cube
 from ksf3d.fem3d import fem_laplacian
 
+FACE_COMBOS = [(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3)]
+
+
+def _faces(T):
+    """Return (boundary_tris, all_tris). boundary = faces on exactly one tet;
+    all = every unique triangular face (for the clip-plane slice)."""
+    count = {}
+    for tet in T:
+        for fc in FACE_COMBOS:
+            key = tuple(sorted(int(tet[k]) for k in fc))
+            count[key] = count.get(key, 0) + 1
+    boundary = [list(k) for k, c in count.items() if c == 1]
+    allf = [list(k) for k in count.keys()]
+    return boundary, allf
+
 
 def build(n=8):
     V, T = kuhn_cube(n)
@@ -34,6 +49,7 @@ def build(n=8):
     kdiag = np.zeros(len(V))
     for (i, j), c in zip(edges, cond):
         kdiag[i] += c; kdiag[j] += c
+    boundary, allf = _faces(T)
     return {
         "nV": int(len(V)),
         "verts": [round(float(x), 5) for x in V.flatten()],
@@ -41,6 +57,8 @@ def build(n=8):
         "cond": [round(float(c), 6) for c in cond],
         "mass": [round(float(m), 7) for m in Mv],
         "kdiag": [round(float(k), 6) for k in kdiag],
+        "btris": [int(x) for t in boundary for x in t],   # boundary triangles
+        "atris": [int(x) for t in allf for x in t],       # all unique triangles
     }
 
 
@@ -55,7 +73,7 @@ def main():
         f.write("window.KSF_UNIFIED = " + json.dumps(d, separators=(",", ":")) + ";\n")
     print(f"wrote {os.path.normpath(out)}")
     print(f"  nV={d['nV']}  nE={len(d['edges'])//2}  "
-          f"cond>0 (negatives={sum(1 for c in d['cond'] if c < 0)})")
+          f"btris={len(d['btris'])//3}  atris={len(d['atris'])//3}")
 
 
 if __name__ == "__main__":
