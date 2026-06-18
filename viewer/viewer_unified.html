@@ -56,7 +56,7 @@ canvas{display:block;width:100%;height:100%}
       <button class="btn" id="bSlice">slice: off</button>
       <div style="font-size:11px;color:var(--dim);margin-bottom:3px">cut position</div>
       <input type="range" id="rSlice" min="0" max="100" value="50">
-      <button class="btn on" id="bTrans" style="margin-top:6px">transparency: on</button>
+      <button class="btn" id="bTrans" style="margin-top:6px">transparency: off</button>
     </div>
     <div>
       <div class="lbl">Paint conductivity</div>
@@ -91,8 +91,8 @@ const edges=D.edges, nE=edges.length/2;
 const cond=new Float32Array(D.cond);
 const mass=new Float32Array(D.mass);
 const kdiag=new Float32Array(D.kdiag);
-const btris=new Uint32Array(D.btris), nBT=btris.length/3;
-const atris=new Uint32Array(D.atris), nAT=atris.length/3;
+const btris=new Uint16Array(D.btris), nBT=btris.length/3;   // nV<65535 -> 16-bit OK
+const atris=new Uint16Array(D.atris), nAT=atris.length/3;
 const Minv=new Float32Array(nV); for(let i=0;i<nV;i++)Minv[i]=1/mass[i];
 
 const MATS=[["air",1.0,"#3b6ea8"],["metal",6.0,"#e0654f"],["wood",0.4,"#8b6914"],["insul",0.05,"#4ecdc4"]];
@@ -110,13 +110,20 @@ const dtHeat=0.5/(maxKM*6);
 
 let p0=new Float32Array(nV),p1=new Float32Array(nV),tmp=new Float32Array(nV);
 let mode="wave",running=true,step=0;
-let spin=true,edgesOn=false,sliceOn=false,trans=true,sliceX=0.0;
+let spin=true,edgesOn=false,sliceOn=false,trans=false,sliceX=0.0;
 let rx=-0.4,ry=0.6,dist=2.6,drag=false,lx=0,ly=0;
 
 function reset(){p0.fill(0);p1.fill(0);step=0;}
 function pulse(idx){
   if(idx==null){let best=0,bd=1e9;for(let i=0;i<nV;i++){const x=verts[3*i],y=verts[3*i+1],z=verts[3*i+2];const d=x*x+y*y+z*z;if(d<bd){bd=d;best=i;}}idx=best;}
-  if(mode==="wave"){p1[idx]=1.0;p0[idx]=0.0;}else{p1[idx]=1.0;}
+  // gaussian blob around the chosen vertex (broad enough to be visible & propagate)
+  const cx=verts[3*idx],cy=verts[3*idx+1],cz=verts[3*idx+2];
+  const sig=0.12;
+  for(let i=0;i<nV;i++){
+    const dx=verts[3*i]-cx,dy=verts[3*i+1]-cy,dz=verts[3*i+2]-cz;
+    const g=Math.exp(-(dx*dx+dy*dy+dz*dz)/(2*sig*sig));
+    if(g>0.01){ if(mode==="wave"){p1[i]+=g;p0[i]+=g;} else {p1[i]+=g;} }
+  }
 }
 function stepSim(){
   if(mode==="wave"){applyK(p1,tmp);const p2=p0;
@@ -145,6 +152,10 @@ document.getElementById("bEdges").onclick=e=>{edgesOn=!edgesOn;e.target.classLis
 /* WebGL */
 const cv=document.getElementById("gl");
 const gl=cv.getContext("webgl",{antialias:true,depth:true,alpha:false});
+function showErr(msg){const d=document.createElement("div");
+  d.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#e0654f;background:#0c161b;border:1px solid #e0654f;padding:14px 18px;border-radius:8px;max-width:70%;font-size:12px;line-height:1.6;z-index:9";
+  d.textContent=msg;document.getElementById("stage").appendChild(d);}
+if(!gl){showErr("WebGL is unavailable in this browser/context.");}
 const extUint=gl.getExtension("OES_element_index_uint");
 const M={mul:(a,b)=>{const o=new Array(16);for(let r=0;r<4;r++)for(let c=0;c<4;c++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s;}return o;},
   persp:(f,a,n,fa)=>{const t=1/Math.tan(f/2);return[t/a,0,0,0,0,t,0,0,0,0,(fa+n)/(n-fa),-1,0,0,2*fa*n/(n-fa),0];},
@@ -157,7 +168,7 @@ uniform mat4 uMVP;varying float vVal;varying vec3 vWorld;
 void main(){gl_Position=uMVP*vec4(aPos,1.0);vVal=aVal;vWorld=aPos;}`;
 const FS=`precision mediump float;
 varying float vVal;varying vec3 vWorld;
-uniform float uAlpha;uniform float uSliceX;uniform float uSlice;
+uniform float uAlpha;uniform float uSliceX;uniform float uSlice;uniform float uScale;
 vec3 ramp(float t){
   vec3 c0=vec3(0.12,0.31,0.66),c1=vec3(0.18,0.64,0.42),c2=vec3(0.91,0.83,0.29),
        c3=vec3(0.91,0.56,0.18),c4=vec3(0.88,0.26,0.18),c5=vec3(0.48,0.25,0.69),c6=vec3(1.0,1.0,1.0);
@@ -171,15 +182,17 @@ vec3 ramp(float t){
 }
 void main(){
   if(uSlice>0.5 && vWorld.x>uSliceX) discard;
-  float inten=clamp(abs(vVal)*4.0,0.0,1.0);
+  float inten=clamp(abs(vVal)*uScale,0.0,1.0);
   gl_FragColor=vec4(ramp(inten), uAlpha);
 }`;
 const LVS=`attribute vec3 aPos;uniform mat4 uMVP;void main(){gl_Position=uMVP*vec4(aPos,1.0);}`;
 const LFS=`precision mediump float;void main(){gl_FragColor=vec4(0.10,0.18,0.22,0.5);}`;
 
-function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(o);return o;}
-function pr(v,f){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,v));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,f));gl.linkProgram(p);return p;}
-const pTri=pr(VS,FS), pLine=pr(LVS,LFS);
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error("shader compile: "+gl.getShaderInfoLog(o));return o;}
+function pr(v,f){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,v));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,f));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error("link: "+gl.getProgramInfoLog(p));return p;}
+let pTri,pLine;
+try{ pTri=pr(VS,FS); pLine=pr(LVS,LFS); }
+catch(err){ showErr("Shader error: "+err.message); throw err; }
 
 const posBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,posBuf);gl.bufferData(gl.ARRAY_BUFFER,verts,gl.STATIC_DRAW);
 const valBuf=gl.createBuffer();
@@ -226,8 +239,11 @@ function frame(){
   gl.uniformMatrix4fv(gl.getUniformLocation(pTri,"uMVP"),false,mvp);
   gl.uniform1f(gl.getUniformLocation(pTri,"uSliceX"),sliceX);
   gl.uniform1f(gl.getUniformLocation(pTri,"uSlice"),sliceOn?1.0:0.0);
+  // auto-normalise colour to the current peak so the field is always visible
+  let mx=1e-6; for(let i=0;i<nV;i++){const a=Math.abs(p1[i]); if(a>mx)mx=a;}
+  gl.uniform1f(gl.getUniformLocation(pTri,"uScale"),1.0/mx);
 
-  const idxType=extUint?gl.UNSIGNED_INT:gl.UNSIGNED_SHORT;
+  const idxType=gl.UNSIGNED_SHORT;
 
   if(sliceOn){
     gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);
@@ -249,6 +265,8 @@ function frame(){
     gl.uniformMatrix4fv(gl.getUniformLocation(pLine,"uMVP"),false,mvp);
     gl.drawArrays(gl.LINES,0,nE*2);
   }
+  if(!window._glChecked){window._glChecked=true;const e=gl.getError();
+    if(e!==gl.NO_ERROR) showErr("GL error 0x"+e.toString(16)+" — rendering may fail.");}
   requestAnimationFrame(frame);
 }
 if(!extUint) console.warn("OES_element_index_uint missing — large meshes may misrender");
