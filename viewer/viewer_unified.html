@@ -84,7 +84,10 @@ canvas{display:block;width:100%;height:100%}
 <script src="data_unified.js"></script>
 <script>
 "use strict";
-const D=window.KSF_UNIFIED;
+function showErr(msg){const d=document.createElement("div");
+  d.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#e0654f;background:#0c161b;border:1px solid #e0654f;padding:14px 18px;border-radius:8px;max-width:76%;font-size:12px;line-height:1.6;white-space:pre-wrap;z-index:9";
+  d.textContent=msg;const s=document.getElementById("stage");if(s)s.appendChild(d);}
+function boot(D){
 const nV=D.nV;
 const verts=new Float32Array(D.verts);
 const edges=D.edges, nE=edges.length/2;
@@ -152,11 +155,7 @@ document.getElementById("bEdges").onclick=e=>{edgesOn=!edgesOn;e.target.classLis
 /* WebGL */
 const cv=document.getElementById("gl");
 const gl=cv.getContext("webgl",{antialias:true,depth:true,alpha:false});
-function showErr(msg){const d=document.createElement("div");
-  d.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#e0654f;background:#0c161b;border:1px solid #e0654f;padding:14px 18px;border-radius:8px;max-width:70%;font-size:12px;line-height:1.6;z-index:9";
-  d.textContent=msg;document.getElementById("stage").appendChild(d);}
-if(!gl){showErr("WebGL is unavailable in this browser/context.");}
-const extUint=gl.getExtension("OES_element_index_uint");
+if(!gl){showErr("WebGL is unavailable in this browser/context.");return;}
 const M={mul:(a,b)=>{const o=new Array(16);for(let r=0;r<4;r++)for(let c=0;c<4;c++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s;}return o;},
   persp:(f,a,n,fa)=>{const t=1/Math.tan(f/2);return[t/a,0,0,0,0,t,0,0,0,0,(fa+n)/(n-fa),-1,0,0,2*fa*n/(n-fa),0];},
   tr:(x,y,z)=>[1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1],
@@ -269,9 +268,31 @@ function frame(){
     if(e!==gl.NO_ERROR) showErr("GL error 0x"+e.toString(16)+" — rendering may fail.");}
   requestAnimationFrame(frame);
 }
-if(!extUint) console.warn("OES_element_index_uint missing — large meshes may misrender");
 pulse(null);
 frame();
+}  /* end boot */
+
+/* ---- robust data loader: works on file:// and on servers regardless of .js MIME ---- */
+(function loadData(){
+  if(window.KSF_UNIFIED && window.KSF_UNIFIED.nV){ boot(window.KSF_UNIFIED); return; }
+  // <script src> did not populate the global (e.g. server served .js with a non-JS
+  // MIME type and the browser refused to execute it). Fetch the file and parse it.
+  fetch("data_unified.js",{cache:"no-store"})
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.text(); })
+    .then(function(t){
+      var m=t.match(/KSF_UNIFIED\s*=\s*(\{[\s\S]*\})\s*;?\s*$/);
+      if(!m) throw new Error("could not parse data_unified.js");
+      boot(JSON.parse(m[1]));
+    })
+    .catch(function(e){
+      showErr("data_unified.js could not be loaded ("+e.message+").\n\n"+
+        "Checklist for servers:\n"+
+        "• the file is deployed in the SAME folder as viewer_unified.html\n"+
+        "• the filename case matches exactly (Linux is case-sensitive)\n"+
+        "• the server serves .js as a JavaScript MIME type\n"+
+        "• no path rewrite is stripping the request");
+    });
+})();
 </script>
 </body>
 </html>
