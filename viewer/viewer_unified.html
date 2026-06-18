@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KSF · one operator L — heat & scalar wave</title>
+<style>
+:root{--bg:#070d10;--ink:#cfe3e8;--dim:#5a7a84;--amber:#e8b75a;--coral:#e0654f;
+  --teal:#4ecdc4;--line:#152028;--panel:#0c161b}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+#wrap{display:flex;height:100%}
+#side{width:210px;min-width:210px;background:var(--panel);border-right:1px solid var(--line);
+  padding:16px 12px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.lbl{font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:6px}
+.btn{display:block;width:100%;padding:7px 10px;background:transparent;border:1px solid var(--line);
+  border-radius:5px;color:var(--ink);font:inherit;font-size:12px;cursor:pointer;text-align:left;margin-bottom:6px}
+.btn:hover{border-color:var(--dim)} .btn.on{border-color:var(--amber);color:var(--amber)}
+.seg{display:flex;gap:0;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.seg button{flex:1;padding:7px 0;background:transparent;border:none;color:var(--dim);font:inherit;font-size:12px;cursor:pointer}
+.seg button.on{background:rgba(232,183,90,.15);color:var(--amber)}
+.mat{display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--line);
+  border-radius:5px;cursor:pointer;margin-bottom:5px}
+.mat.on{border-color:var(--teal)} .sw{width:12px;height:12px;border-radius:3px}
+.mat .nm{flex:1} .mat .k{color:var(--dim);font-size:11px}
+input[type=range]{width:100%;accent-color:var(--amber)}
+#stage{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;left:12px;bottom:12px;font-size:11px;color:var(--dim);
+  background:rgba(7,13,16,.85);padding:8px 10px;border:1px solid var(--line);border-radius:6px;
+  line-height:1.7;max-width:260px;pointer-events:none}
+#hud b{color:var(--ink)} .a{color:var(--amber)} .t{color:var(--teal)}
+#tag{position:absolute;right:12px;top:12px;font-size:11px;color:var(--dim);
+  background:rgba(7,13,16,.85);padding:6px 10px;border:1px solid var(--line);border-radius:6px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="side">
+    <div>
+      <div class="lbl">Physics (same L)</div>
+      <div class="seg" id="mode">
+        <button class="on" data-m="wave">wave</button>
+        <button data-m="heat">heat</button>
+      </div>
+    </div>
+    <div>
+      <div class="lbl">Run</div>
+      <button class="btn on" id="bRun">▶ running</button>
+      <button class="btn" id="bPulse">⚡ pulse (centre)</button>
+      <button class="btn" id="bReset">↺ reset field</button>
+    </div>
+    <div>
+      <div class="lbl">Paint conductivity</div>
+      <div id="mats"></div>
+      <div style="font-size:11px;color:var(--dim);margin-top:4px">click a node to excite + paint</div>
+    </div>
+    <div>
+      <div class="lbl">View</div>
+      <button class="btn on" id="bSpin">auto-rotate: on</button>
+      <button class="btn on" id="bEdges">edges: on</button>
+      <div style="font-size:11px;color:var(--dim);margin-top:6px">point size</div>
+      <input type="range" id="rSize" min="2" max="14" value="6">
+    </div>
+  </div>
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <div id="hud">
+      <b>One operator L</b> — the cotangent/FE = heat-conductance network.<br>
+      <span class="a">wave</span>: p̈ = −M⁻¹K p (oscillates)<br>
+      <span class="a">heat</span>: ṗ = −M⁻¹K p (diffuses)<br>
+      <span class="t">paint</span> conductivity to bend the field.<br>
+      same L, two time-structures · drag · scroll
+    </div>
+    <div id="tag">mode <span id="tagm">wave</span> · step <span id="tags">0</span></div>
+  </div>
+</div>
+<script src="data_unified.js"></script>
+<script>
+"use strict";
+const D = window.KSF_UNIFIED;
+const nV = D.nV;
+const verts = new Float32Array(D.verts);
+const edges = D.edges, nE = edges.length/2;
+const cond = new Float32Array(D.cond);
+const mass = new Float32Array(D.mass);
+const kdiag = new Float32Array(D.kdiag);
+const Minv = new Float32Array(nV);
+for(let i=0;i<nV;i++) Minv[i]=1/mass[i];
+
+// material conductivity multiplier per vertex
+const MATS = [["air",1.0,"#3b6ea8"],["metal",6.0,"#e0654f"],["wood",0.4,"#8b6914"],["insul",0.05,"#4ecdc4"]];
+const mmul = new Float32Array(nV).fill(1.0);
+let selMat=1;
+
+/* ---- L matvec:  (Kp)[i] = Σ_{j~i} c_ij*mfac*(p_i - p_j) ---- */
+function applyK(p, out){
+  out.fill(0);
+  for(let e=0;e<nE;e++){
+    const i=edges[2*e], j=edges[2*e+1];
+    const c=cond[e]*0.5*(mmul[i]+mmul[j]);   // material-scaled conductance
+    const f=c*(p[i]-p[j]);
+    out[i]+=f; out[j]-=f;
+  }
+}
+
+/* ---- stable dt ---- */
+let lamMax=0;
+for(let i=0;i<nV;i++) lamMax=Math.max(lamMax, 2*kdiag[i]*Minv[i]*6); // rough bound w/ max mmul
+const dtWave=0.7*Math.sqrt(4/lamMax);
+const dtHeat=0.7*(1/ (Math.max(...Array.from({length:nV},(_,i)=>kdiag[i]*Minv[i]))*6));
+
+/* ---- state ---- */
+let p0=new Float32Array(nV), p1=new Float32Array(nV), tmp=new Float32Array(nV);
+let mode="wave", running=true, step=0;
+let spin=true, edgesOn=true, psize=6;
+let rx=-0.4, ry=0.6, dist=2.6, drag=false, lx=0, ly=0;
+
+function reset(){ p0.fill(0); p1.fill(0); step=0; }
+function pulse(idx){
+  if(idx==null){ // centre
+    let best=0,bd=1e9; for(let i=0;i<nV;i++){const x=verts[3*i],y=verts[3*i+1],z=verts[3*i+2];const d=x*x+y*y+z*z; if(d<bd){bd=d;best=i;}} idx=best;
+  }
+  if(mode==="wave"){ p1[idx]=1.0; p0[idx]=0.0; } else { p1[idx]=1.0; }
+}
+
+function stepSim(){
+  if(mode==="wave"){
+    applyK(p1,tmp);
+    const p2=p0; // reuse buffer
+    for(let i=0;i<nV;i++) p2[i]=2*p1[i]-p0[i]-dtWave*dtWave*Minv[i]*tmp[i];
+    p0=p1; p1=p2;
+  }else{
+    applyK(p1,tmp);
+    for(let i=0;i<nV;i++) p1[i]=p1[i]-dtHeat*Minv[i]*tmp[i];
+  }
+  step++;
+}
+
+/* ---- UI ---- */
+const mats=document.getElementById("mats");
+MATS.forEach((m,i)=>{const d=document.createElement("div");d.className="mat"+(i===selMat?" on":"");
+  d.innerHTML=`<div class="sw" style="background:${m[2]}"></div><span class="nm">${m[0]}</span><span class="k">k=${m[1]}</span>`;
+  d.onclick=()=>{selMat=i;document.querySelectorAll(".mat").forEach((e,j)=>e.classList.toggle("on",j===i));};
+  mats.appendChild(d);});
+document.querySelectorAll("#mode button").forEach(b=>b.onclick=()=>{
+  mode=b.dataset.m; document.querySelectorAll("#mode button").forEach(x=>x.classList.toggle("on",x===b));
+  document.getElementById("tagm").textContent=mode; reset();});
+document.getElementById("bRun").onclick=e=>{running=!running;e.target.classList.toggle("on",running);e.target.textContent=running?"▶ running":"⏸ paused";};
+document.getElementById("bPulse").onclick=()=>pulse(null);
+document.getElementById("bReset").onclick=reset;
+document.getElementById("bSpin").onclick=e=>{spin=!spin;e.target.classList.toggle("on",spin);e.target.textContent="auto-rotate: "+(spin?"on":"off");};
+document.getElementById("bEdges").onclick=e=>{edgesOn=!edgesOn;e.target.classList.toggle("on",edgesOn);e.target.textContent="edges: "+(edgesOn?"on":"off");};
+document.getElementById("rSize").oninput=e=>psize=+e.target.value;
+
+/* ---- WebGL ---- */
+const cv=document.getElementById("gl");
+const gl=cv.getContext("webgl",{antialias:true,depth:true});
+const M={mul:(a,b)=>{const o=new Array(16);for(let r=0;r<4;r++)for(let c=0;c<4;c++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s;}return o;},
+  persp:(f,a,n,fa)=>{const t=1/Math.tan(f/2);return[t/a,0,0,0,0,t,0,0,0,0,(fa+n)/(n-fa),-1,0,0,2*fa*n/(n-fa),0];},
+  tr:(x,y,z)=>[1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1],
+  rx:a=>{const c=Math.cos(a),s=Math.sin(a);return[1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1];},
+  ry:a=>{const c=Math.cos(a),s=Math.sin(a);return[c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1];}};
+
+const PVS=`attribute vec3 aPos;attribute float aVal;attribute float aMat;
+uniform mat4 uMVP;uniform float uSize;varying float vVal;varying float vMat;
+void main(){gl_Position=uMVP*vec4(aPos,1.0);gl_PointSize=uSize*(1.0+1.5*abs(aVal));vVal=aVal;vMat=aMat;}`;
+const PFS=`precision mediump float;varying float vVal;varying float vMat;
+void main(){vec2 d=gl_PointCoord-0.5;if(dot(d,d)>0.25)discard;
+  // diverging colormap: blue(neg)->dark->amber(pos)
+  float v=clamp(vVal*3.0,-1.0,1.0);
+  vec3 pos=vec3(0.91,0.72,0.35),neg=vec3(0.24,0.43,0.66),mid=vec3(0.05,0.09,0.11);
+  vec3 col = v>=0.0? mix(mid,pos,v) : mix(mid,neg,-v);
+  // tint slightly by material
+  gl_FragColor=vec4(col,1.0);}`;
+const LVS=`attribute vec3 aPos;uniform mat4 uMVP;void main(){gl_Position=uMVP*vec4(aPos,1.0);}`;
+const LFS=`precision mediump float;void main(){gl_FragColor=vec4(0.09,0.17,0.21,1.0);}`;
+
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
+  if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(o);return o;}
+function pr(v,f){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,v));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,f));gl.linkProgram(p);return p;}
+const pPoint=pr(PVS,PFS), pLine=pr(LVS,LFS);
+
+const posBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,posBuf);gl.bufferData(gl.ARRAY_BUFFER,verts,gl.STATIC_DRAW);
+const valBuf=gl.createBuffer();
+const matBuf=gl.createBuffer();
+const edgePos=new Float32Array(nE*2*3);
+for(let e=0;e<nE;e++){const i=edges[2*e],j=edges[2*e+1];
+  edgePos[6*e]=verts[3*i];edgePos[6*e+1]=verts[3*i+1];edgePos[6*e+2]=verts[3*i+2];
+  edgePos[6*e+3]=verts[3*j];edgePos[6*e+4]=verts[3*j+1];edgePos[6*e+5]=verts[3*j+2];}
+const edgeBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,edgeBuf);gl.bufferData(gl.ARRAY_BUFFER,edgePos,gl.STATIC_DRAW);
+
+function resize(){const dpr=Math.min(devicePixelRatio||1,2);cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;gl.viewport(0,0,cv.width,cv.height);}
+window.addEventListener("resize",resize);resize();
+gl.enable(gl.DEPTH_TEST);gl.clearColor(0.027,0.051,0.063,1);
+
+cv.addEventListener("mousedown",e=>{drag=true;lx=e.clientX;ly=e.clientY;});
+window.addEventListener("mouseup",()=>drag=false);
+window.addEventListener("mousemove",e=>{if(!drag)return;ry+=(e.clientX-lx)*0.008;rx+=(e.clientY-ly)*0.008;lx=e.clientX;ly=e.clientY;});
+cv.addEventListener("wheel",e=>{dist*=(1+Math.sign(e.deltaY)*0.08);dist=Math.max(1.2,Math.min(8,dist));e.preventDefault();},{passive:false});
+cv.addEventListener("click",e=>{
+  if(Math.abs(e.clientX-lx)>3||Math.abs(e.clientY-ly)>3)return;
+  // pick nearest vertex in screen space
+  const mvp=getMVP();const dpr=Math.min(devicePixelRatio||1,2);
+  const mx=e.offsetX*dpr, my=e.offsetY*dpr; let best=-1,bd=1e9;
+  for(let i=0;i<nV;i++){const x=verts[3*i],y=verts[3*i+1],z=verts[3*i+2];
+    const cx=mvp[0]*x+mvp[4]*y+mvp[8]*z+mvp[12],cy=mvp[1]*x+mvp[5]*y+mvp[9]*z+mvp[13],cw=mvp[3]*x+mvp[7]*y+mvp[11]*z+mvp[15];
+    if(cw<=0)continue;const sx=(cx/cw*0.5+0.5)*cv.width,sy=(-cy/cw*0.5+0.5)*cv.height;
+    const d=(sx-mx)**2+(sy-my)**2;if(d<bd){bd=d;best=i;}}
+  if(best>=0&&bd<900){ mmul[best]=MATS[selMat][1]; pulse(best); updateMat(); }
+});
+
+function getMVP(){const proj=M.persp(1.0,cv.width/cv.height,0.05,50);const model=M.mul(M.ry(ry),M.rx(rx));const view=M.tr(0,0,-dist);return M.mul(proj,M.mul(view,model));}
+const matArr=new Float32Array(nV).fill(selMat);
+function updateMat(){ for(let i=0;i<nV;i++){let mi=0;for(let k=0;k<MATS.length;k++)if(Math.abs(mmul[i]-MATS[k][1])<1e-6)mi=k;matArr[i]=mi;} gl.bindBuffer(gl.ARRAY_BUFFER,matBuf);gl.bufferData(gl.ARRAY_BUFFER,matArr,gl.DYNAMIC_DRAW);}
+updateMat();
+
+function attr(p,name,buf,size){const l=gl.getAttribLocation(p,name);if(l<0)return;gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,size,gl.FLOAT,false,0,0);}
+
+function frame(){
+  if(spin)ry+=0.003;
+  if(running){ for(let s=0;s<2;s++) stepSim(); }
+  document.getElementById("tags").textContent=step;
+  const mvp=getMVP();
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  if(edgesOn){
+    gl.useProgram(pLine);attr(pLine,"aPos",edgeBuf,3);
+    gl.uniformMatrix4fv(gl.getUniformLocation(pLine,"uMVP"),false,mvp);
+    gl.drawArrays(gl.LINES,0,nE*2);
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER,valBuf);gl.bufferData(gl.ARRAY_BUFFER,p1,gl.DYNAMIC_DRAW);
+  gl.useProgram(pPoint);
+  attr(pPoint,"aPos",posBuf,3);attr(pPoint,"aVal",valBuf,1);attr(pPoint,"aMat",matBuf,1);
+  gl.uniformMatrix4fv(gl.getUniformLocation(pPoint,"uMVP"),false,mvp);
+  gl.uniform1f(gl.getUniformLocation(pPoint,"uSize"),psize);
+  gl.drawArrays(gl.POINTS,0,nV);
+  requestAnimationFrame(frame);
+}
+pulse(null);
+frame();
+</script>
+</body>
+</html>
