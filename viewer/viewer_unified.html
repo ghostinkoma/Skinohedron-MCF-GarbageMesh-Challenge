@@ -334,6 +334,12 @@ function frame(){
   }
 
   if(wireOn){
+    // CRITICAL: the face pass leaves pTri's aPos (posBuf, nV verts) and aVal
+    // (valBuf, nV verts) enabled. The wireframe draw asks for nW*2 (=8368)
+    // vertices; WebGL validates EVERY enabled array against that count and
+    // fails the whole draw if any is too small. Disable them first.
+    const la=gl.getAttribLocation(pTri,"aPos"); if(la>=0) gl.disableVertexAttribArray(la);
+    const lv=gl.getAttribLocation(pTri,"aVal"); if(lv>=0) gl.disableVertexAttribArray(lv);
     gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);
     gl.useProgram(pLine);attr(pLine,"aPos",wireBuf,3);
     gl.uniformMatrix4fv(gl.getUniformLocation(pLine,"uMVP"),false,mvp);
