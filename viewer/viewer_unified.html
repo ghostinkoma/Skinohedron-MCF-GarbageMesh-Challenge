@@ -93,7 +93,7 @@ canvas{display:block;width:100%;height:100%}
     <div id="bar"><div class="grad"></div><div class="lab"><span>0</span><span>intensity</span><span>max</span></div></div>
   </div>
 </div>
-<script src="data_unified.js"></script>
+<script src="data_unified.js?v=3"></script>
 <script>
 "use strict";
 function showErr(msg){const d=document.createElement("div");
@@ -101,6 +101,7 @@ function showErr(msg){const d=document.createElement("div");
   d.textContent=msg;const s=document.getElementById("stage");if(s)s.appendChild(d);}
 
 function boot(D){
+try{
 const nV=D.nV;
 const verts=new Float32Array(D.verts);
 const cond=new Float32Array(D.cond);
@@ -139,7 +140,11 @@ let rx=-0.4,ry=0.6,dist=2.6;
 let rotating=false,injecting=false,activeV=-1,lx=0,ly=0;
 
 function resetField(){p0.fill(0);p1.fill(0);step=0;simTime=0;
-  if(mode==="heat"){for(let i=0;i<nV;i++){p0[i]=Tenv;p1[i]=Tenv;}}}
+  if(mode==="heat"){for(let i=0;i<nV;i++){p0[i]=Tenv;p1[i]=Tenv;}}
+  // seed a central excitation so the field is visible immediately on load/reset
+  let c=0,bd=1e9;for(let i=0;i<nV;i++){const x=verts[3*i],y=verts[3*i+1],z=verts[3*i+2];const d=x*x+y*y+z*z;if(d<bd){bd=d;c=i;}}
+  if(mode==="wave"){nbrBlob(c,1.0,p1,p0);} else {nbrBlob(c,0.8,p1,null);}
+}
 
 function nbrBlob(idx,amp,arr,arr2){
   const cx=verts[3*idx],cy=verts[3*idx+1],cz=verts[3*idx+2],sig=0.10;
@@ -328,10 +333,10 @@ function frame(){
   }
 
   if(wireOn){
-    gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);
     gl.useProgram(pLine);attr(pLine,"aPos",wireBuf,3);
     gl.uniformMatrix4fv(gl.getUniformLocation(pLine,"uMVP"),false,mvp);
-    gl.uniform4f(gl.getUniformLocation(pLine,"uCol"),0.30,0.45,0.52,0.5);
+    gl.uniform4f(gl.getUniformLocation(pLine,"uCol"),0.36,0.52,0.60,0.45);
     gl.drawArrays(gl.LINES,0,nW*2);
   }
   if(!window._glChecked){window._glChecked=true;const er=gl.getError();
@@ -341,6 +346,7 @@ function frame(){
 
 setMode("wave");setEnv("water");resetField();
 frame();
+}catch(e){showErr("Runtime error in viewer:\n"+(e&&e.message?e.message:e)+"\n\n"+(e&&e.stack?e.stack:""));throw e;}
 }  /* end boot */
 
 /* ---- robust data loader (file:// and servers regardless of .js MIME) ---- */
