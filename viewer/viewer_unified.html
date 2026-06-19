@@ -324,7 +324,8 @@ function frame(){
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,aIdx);
     gl.drawElements(gl.TRIANGLES,nAT*3,gl.UNSIGNED_SHORT,0);
   }else{
-    const alpha=trans?0.5:1.0;
+    let alpha=trans?0.5:1.0;
+    if(wireOn&&!trans) alpha=0.82;           // soften faces so the wireframe reads
     gl.uniform1f(gl.getUniformLocation(pTri,"uAlpha"),alpha);
     if(alpha<1.0){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);}
     else{gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);}
@@ -336,7 +337,7 @@ function frame(){
     gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);
     gl.useProgram(pLine);attr(pLine,"aPos",wireBuf,3);
     gl.uniformMatrix4fv(gl.getUniformLocation(pLine,"uMVP"),false,mvp);
-    gl.uniform4f(gl.getUniformLocation(pLine,"uCol"),0.36,0.52,0.60,0.45);
+    gl.uniform4f(gl.getUniformLocation(pLine,"uCol"),0.95,0.98,1.0,0.9);   // bright, opaque-ish
     gl.drawArrays(gl.LINES,0,nW*2);
   }
   if(!window._glChecked){window._glChecked=true;const er=gl.getError();
