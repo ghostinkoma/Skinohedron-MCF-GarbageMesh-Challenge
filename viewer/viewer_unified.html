@@ -89,7 +89,7 @@ canvas{display:block;width:100%;height:100%}
       colour = intensity (heatmap). <span class="t">hold</span> to excite.<br>
       heat cools to the outside (water/air/vacuum).
     </div>
-    <div id="tag">v7 · mode <span id="tagm">wave</span> · step <span id="tags">0</span></div>
+    <div id="tag">v8 · mode <span id="tagm">wave</span> · step <span id="tags">0</span> · <span id="tagw">wire?</span></div>
     <div id="bar"><div class="grad"></div><div class="lab"><span>0</span><span>intensity</span><span>max</span></div></div>
   </div>
 </div>
@@ -102,7 +102,7 @@ function showErr(msg){const d=document.createElement("div");
 
 function boot(D){
 try{
-console.log("KSF viewer v7 — wireframe indexed lines (same program, lifted)");
+console.log("KSF viewer v8 — wireframe indexed lines + live diagnostic");
 const nV=D.nV;
 const verts=new Float32Array(D.verts);
 const cond=new Float32Array(D.cond);
@@ -342,9 +342,14 @@ function frame(){
     gl.uniform1f(gl.getUniformLocation(pTri,"uFlat"),1.0);
     gl.uniform3f(gl.getUniformLocation(pTri,"uFlatCol"),0.92,0.96,1.0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,lineIdx);
+    gl.getError(); // clear prior
     gl.drawElements(gl.LINES,nW*2,gl.UNSIGNED_SHORT,0);
+    const we=gl.getError();
+    document.getElementById("tagw").textContent="wire ON nW="+nW+(we?(" ERR 0x"+we.toString(16)):" ok");
     gl.uniform1f(gl.getUniformLocation(pTri,"uLift"),0.0);
     gl.uniform1f(gl.getUniformLocation(pTri,"uFlat"),0.0);
+  } else {
+    document.getElementById("tagw").textContent="wire OFF";
   }
   if(!window._glChecked){window._glChecked=true;const er=gl.getError();
     if(er!==gl.NO_ERROR)showErr("GL error 0x"+er.toString(16));}
