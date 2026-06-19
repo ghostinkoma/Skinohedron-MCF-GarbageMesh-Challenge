@@ -89,7 +89,7 @@ canvas{display:block;width:100%;height:100%}
       colour = intensity (heatmap). <span class="t">hold</span> to excite.<br>
       heat cools to the outside (water/air/vacuum).
     </div>
-    <div id="tag">mode <span id="tagm">wave</span> · step <span id="tags">0</span></div>
+    <div id="tag">v5 · mode <span id="tagm">wave</span> · step <span id="tags">0</span></div>
     <div id="bar"><div class="grad"></div><div class="lab"><span>0</span><span>intensity</span><span>max</span></div></div>
   </div>
 </div>
@@ -102,6 +102,7 @@ function showErr(msg){const d=document.createElement("div");
 
 function boot(D){
 try{
+console.log("KSF viewer v5 — wireframe attrib-fix, transparency present");
 const nV=D.nV;
 const verts=new Float32Array(D.verts);
 const cond=new Float32Array(D.cond);
