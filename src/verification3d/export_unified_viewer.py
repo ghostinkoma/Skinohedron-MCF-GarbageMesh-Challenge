@@ -36,6 +36,18 @@ def _faces(T):
     return boundary, allf
 
 
+def _all_edges(T):
+    """Every unique tetrahedral edge (for the wireframe). The conductance graph
+    drops edges whose cotangent weight is ~0 (right-angle dihedrals), so the
+    wireframe needs the full geometric edge set, not the conductance edges."""
+    es = set()
+    for tet in T:
+        for a in range(4):
+            for b in range(a + 1, 4):
+                es.add(tuple(sorted((int(tet[a]), int(tet[b])))))
+    return [list(e) for e in es]
+
+
 def build(n=8):
     V, T = kuhn_cube(n)
     V = V - 0.5
@@ -50,6 +62,7 @@ def build(n=8):
     for (i, j), c in zip(edges, cond):
         kdiag[i] += c; kdiag[j] += c
     boundary, allf = _faces(T)
+    wedges = _all_edges(T)
     return {
         "nV": int(len(V)),
         "verts": [round(float(x), 5) for x in V.flatten()],
@@ -59,6 +72,7 @@ def build(n=8):
         "kdiag": [round(float(k), 6) for k in kdiag],
         "btris": [int(x) for t in boundary for x in t],   # boundary triangles
         "atris": [int(x) for t in allf for x in t],       # all unique triangles
+        "wedges": [int(x) for e in wedges for x in e],    # full wireframe edges
     }
 
 
@@ -73,7 +87,7 @@ def main():
         f.write("window.KSF_UNIFIED = " + json.dumps(d, separators=(",", ":")) + ";\n")
     print(f"wrote {os.path.normpath(out)}")
     print(f"  nV={d['nV']}  nE={len(d['edges'])//2}  "
-          f"btris={len(d['btris'])//3}  atris={len(d['atris'])//3}")
+          f"btris={len(d['btris'])//3}  atris={len(d['atris'])//3}  wedges={len(d['wedges'])//2}")
 
 
 if __name__ == "__main__":
