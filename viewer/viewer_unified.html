@@ -89,7 +89,7 @@ canvas{display:block;width:100%;height:100%}
       colour = intensity (heatmap). <span class="t">hold</span> to excite.<br>
       heat cools to the outside (water/air/vacuum).
     </div>
-    <div id="tag">v5 · mode <span id="tagm">wave</span> · step <span id="tags">0</span></div>
+    <div id="tag">v7 · mode <span id="tagm">wave</span> · step <span id="tags">0</span></div>
     <div id="bar"><div class="grad"></div><div class="lab"><span>0</span><span>intensity</span><span>max</span></div></div>
   </div>
 </div>
@@ -102,7 +102,7 @@ function showErr(msg){const d=document.createElement("div");
 
 function boot(D){
 try{
-console.log("KSF viewer v5 — wireframe attrib-fix, transparency present");
+console.log("KSF viewer v7 — wireframe indexed lines (same program, lifted)");
 const nV=D.nV;
 const verts=new Float32Array(D.verts);
 const cond=new Float32Array(D.cond);
@@ -225,11 +225,12 @@ const M={mul:(a,b)=>{const o=new Array(16);for(let r=0;r<4;r++)for(let c=0;c<4;c
   ry:a=>{const c=Math.cos(a),s=Math.sin(a);return[c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1];}};
 
 const VS=`attribute vec3 aPos;attribute float aVal;
-uniform mat4 uMVP;varying float vVal;varying vec3 vWorld;
-void main(){gl_Position=uMVP*vec4(aPos,1.0);vVal=aVal;vWorld=aPos;}`;
+uniform mat4 uMVP;uniform float uLift;varying float vVal;varying vec3 vWorld;
+void main(){vVal=aVal;vWorld=aPos;gl_Position=uMVP*vec4(aPos,1.0);gl_Position.z-=uLift*gl_Position.w;}`;
 const FS=`precision mediump float;
 varying float vVal;varying vec3 vWorld;
 uniform float uAlpha;uniform float uSliceX;uniform float uSlice;uniform float uScale;
+uniform float uFlat;uniform vec3 uFlatCol;
 vec3 ramp(float t){
   vec3 c0=vec3(0.12,0.31,0.66),c1=vec3(0.18,0.64,0.42),c2=vec3(0.91,0.83,0.29),
        c3=vec3(0.91,0.56,0.18),c4=vec3(0.88,0.26,0.18),c5=vec3(0.48,0.25,0.69),c6=vec3(1.0,1.0,1.0);
@@ -243,27 +244,25 @@ vec3 ramp(float t){
 }
 void main(){
   if(uSlice>0.5 && vWorld.x>uSliceX) discard;
+  if(uFlat>0.5){gl_FragColor=vec4(uFlatCol,1.0);return;}
   float inten=clamp(abs(vVal)*uScale,0.0,1.0);
   gl_FragColor=vec4(ramp(inten), uAlpha);
 }`;
-const LVS=`attribute vec3 aPos;uniform mat4 uMVP;void main(){gl_Position=uMVP*vec4(aPos,1.0);}`;
-const LFS=`precision mediump float;uniform vec4 uCol;void main(){gl_FragColor=uCol;}`;
+const LFS_REMOVED=1;
 
 function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error("shader: "+gl.getShaderInfoLog(o));return o;}
 function pr(v,f){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,v));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,f));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error("link: "+gl.getProgramInfoLog(p));return p;}
-let pTri,pLine;
-try{pTri=pr(VS,FS);pLine=pr(LVS,LFS);}catch(err){showErr("Shader error: "+err.message);throw err;}
+let pTri;
+try{pTri=pr(VS,FS);}catch(err){showErr("Shader error: "+err.message);throw err;}
 
 const posBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,posBuf);gl.bufferData(gl.ARRAY_BUFFER,verts,gl.STATIC_DRAW);
 const valBuf=gl.createBuffer();
 const bIdx=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,bIdx);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,btris,gl.STATIC_DRAW);
 const aIdx=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,aIdx);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,atris,gl.STATIC_DRAW);
 // wireframe edge positions (complete tetrahedral edge set)
-const wirePos=new Float32Array(nW*2*3);
-for(let e=0;e<nW;e++){const i=wedges[2*e],j=wedges[2*e+1];
-  wirePos[6*e]=verts[3*i];wirePos[6*e+1]=verts[3*i+1];wirePos[6*e+2]=verts[3*i+2];
-  wirePos[6*e+3]=verts[3*j];wirePos[6*e+4]=verts[3*j+1];wirePos[6*e+5]=verts[3*j+2];}
-const wireBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,wireBuf);gl.bufferData(gl.ARRAY_BUFFER,wirePos,gl.STATIC_DRAW);
+// wireframe as INDEXED lines into the SAME vertex buffers (proven pattern):
+// wedges is already pairs of vertex indices, so it is the line index buffer.
+const lineIdx=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,lineIdx);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,wedges,gl.STATIC_DRAW);
 
 function resize(){const dpr=Math.min(devicePixelRatio||1,2);cv.width=cv.clientWidth*dpr;cv.height=cv.clientHeight*dpr;gl.viewport(0,0,cv.width,cv.height);}
 window.addEventListener("resize",resize);resize();
@@ -318,6 +317,8 @@ function frame(){
   gl.uniform1f(gl.getUniformLocation(pTri,"uSliceX"),sliceX);
   gl.uniform1f(gl.getUniformLocation(pTri,"uSlice"),sliceOn?1.0:0.0);
   gl.uniform1f(gl.getUniformLocation(pTri,"uScale"),1.0/mx);
+  gl.uniform1f(gl.getUniformLocation(pTri,"uLift"),0.0);
+  gl.uniform1f(gl.getUniformLocation(pTri,"uFlat"),0.0);
 
   if(sliceOn){
     gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);
@@ -326,7 +327,6 @@ function frame(){
     gl.drawElements(gl.TRIANGLES,nAT*3,gl.UNSIGNED_SHORT,0);
   }else{
     let alpha=trans?0.5:1.0;
-    if(wireOn&&!trans) alpha=0.82;           // soften faces so the wireframe reads
     gl.uniform1f(gl.getUniformLocation(pTri,"uAlpha"),alpha);
     if(alpha<1.0){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);}
     else{gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);}
@@ -335,17 +335,16 @@ function frame(){
   }
 
   if(wireOn){
-    // CRITICAL: the face pass leaves pTri's aPos (posBuf, nV verts) and aVal
-    // (valBuf, nV verts) enabled. The wireframe draw asks for nW*2 (=8368)
-    // vertices; WebGL validates EVERY enabled array against that count and
-    // fails the whole draw if any is too small. Disable them first.
-    const la=gl.getAttribLocation(pTri,"aPos"); if(la>=0) gl.disableVertexAttribArray(la);
-    const lv=gl.getAttribLocation(pTri,"aVal"); if(lv>=0) gl.disableVertexAttribArray(lv);
-    gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);
-    gl.useProgram(pLine);attr(pLine,"aPos",wireBuf,3);
-    gl.uniformMatrix4fv(gl.getUniformLocation(pLine,"uMVP"),false,mvp);
-    gl.uniform4f(gl.getUniformLocation(pLine,"uCol"),0.95,0.98,1.0,0.9);   // bright, opaque-ish
-    gl.drawArrays(gl.LINES,0,nW*2);
+    // same program, same vertex buffers, INDEXED lines (wedges) lifted above faces.
+    // No program/attribute switching -> no array-size validation failure.
+    gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);
+    gl.uniform1f(gl.getUniformLocation(pTri,"uLift"),0.004);
+    gl.uniform1f(gl.getUniformLocation(pTri,"uFlat"),1.0);
+    gl.uniform3f(gl.getUniformLocation(pTri,"uFlatCol"),0.92,0.96,1.0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,lineIdx);
+    gl.drawElements(gl.LINES,nW*2,gl.UNSIGNED_SHORT,0);
+    gl.uniform1f(gl.getUniformLocation(pTri,"uLift"),0.0);
+    gl.uniform1f(gl.getUniformLocation(pTri,"uFlat"),0.0);
   }
   if(!window._glChecked){window._glChecked=true;const er=gl.getError();
     if(er!==gl.NO_ERROR)showErr("GL error 0x"+er.toString(16));}
