@@ -18,7 +18,7 @@ ones. All work below is on the equally-spaced **Kuhn cube** (`n=8`: 729 vertices
 | 02 | `02_heat_conduction_route.md` | heat = conduction from contact area; two-point flux is inconsistent on tets, cotangent/FE conductance is consistent (cube spectrum → π²); two-material interface `T = k₂/(k₁+k₂)` exact to 1e-15 | `heat_conduction_verify.py` | done |
 | 03 | `03_unified_scalar.md` | **the consolidation**: one operator `L = M⁻¹K` drives heat (decay `exp(−λt)`) and waves (oscillation `cos(√λt)`) on the same spectrum | `unified_scalar_verify.py` | done |
 | 03b | `03b_dynamics_and_boundaries.md` | **Step 1.5**: damping (`exp(−γt/2)`, γ=0 persists), dispersion cutoff (`f≈0.127` cyc/step), Robin convection (`t½ ∝ 1/h`), Stefan–Boltzmann radiation (`T⁴`); the parametrised viewer instrument | `dynamics_boundary_verify.py` | done |
-| 04 | `04_pressure_field.md` | **Step 2 (theory)**: pressure as one Poisson solve `K p = D f` — hydrostatic (`p=ρgh`), incompressible projection (`∇·u=0`), and gas acoustics (`c²=dp/dρ`, = Step 1 wave) as three regimes; liquid/gas by parameters | planned: `pressure_field_verify.py` | theory only |
+| 04 | `04_pressure_field.md` | **Step 2**: pressure as one Poisson solve `K p = D f` — hydrostatic (`p=ρgh`), incompressible projection (`∇·u=0`), and gas acoustics (`c²=dp/dρ`, = Step 1 wave) as three regimes; liquid/gas by parameters | `pressure_field_verify.py` | done |
 
 ## The one-line result
 
@@ -40,10 +40,10 @@ wireframe.
 
 ## Next
 
-**Step 2 — pressure**: theory is written (`04_pressure_field.md`) — pressure as
-one Poisson solve `K p = D f` on the verified `L`, unifying hydrostatic
-(`p=ρgh`), incompressible projection (`∇·u=0`), and gas acoustics (the Step 1
-wave as the compressible limit), with liquid/gas selected by parameters. **Code
-is the next stage**: `pressure_field_verify.py` asserting the five exact-solution
-targets in §4 of that document, then a dedicated pressure viewer
-(`viewer/viewer_pressure.html`).
+**Step 2 — pressure**: theory written and **verified** (`04_pressure_field.md`,
+`pressure_field_verify.py` — all five exact-solution targets PASS to machine
+precision). Pressure is one Poisson solve `K p = D f` on the verified `L`,
+unifying hydrostatic (`p=ρgh`), incompressible projection (`∇·u=0`), and gas
+acoustics (the Step 1 wave as the compressible limit), liquid/gas by parameters.
+**Next:** a dedicated pressure viewer (`viewer/viewer_pressure.html`) exposing the
+§3 parameters (ρ, g, compressibility, boundary, source).

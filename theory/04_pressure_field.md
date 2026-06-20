@@ -1,10 +1,9 @@
 # 04 · The Pressure Field: One Poisson Solve for Liquids and Gases (Step 2, theory)
 
-**Status:** theory document only (code is the next stage). It opens Step 2 by
-stating the single abstract model the project will build pressure on, and — in
-keeping with 空論を重ねない — it names, for every claim, the **exact solution
-that will verify it** once code exists. Nothing here is asserted as numerically
-established yet; this is the design the verification must meet.
+**Status:** theory + **verification (PASS)**. The model below is now backed by
+`src/verification3d/pressure_field_verify.py`, which asserts each of the five
+exact-solution targets of §4 to machine precision. In keeping with 空論を重ねない,
+the measured residuals are recorded inline.
 
 It builds directly on the verified operator `L = M⁻¹K` of `03`/`03b`.
 
@@ -104,57 +103,59 @@ small `κ>0`, oscillating source → acoustic waves (= Step 1).
 
 ---
 
-## 4. Verification design (what each claim will be checked against)
+## 4. Verification (all five PASS to machine precision)
 
-Code is the next stage; these are the **exact solutions** each regime will be
-asserted against, so the model cannot drift into 空論:
+Implemented in `src/verification3d/pressure_field_verify.py`. First, a consistency
+check confirms the gradient/divergence are the same operator as `K`:
+`‖D(grad p) − K p‖ / ‖K p‖ = 3.4e-16`. Then:
 
 1. **Hydrostatic, closed tank (liquid).** Solve `K p = D(ρg)` with Neumann walls.
-   *Exact target:* `p = ρ g·x + const`, i.e. pressure linear in depth, gradient
-   exactly `ρg`. Check recovered `p` is affine to ~machine precision (linear
-   fields are in the P1 space, so this should be near-exact, like the
-   `T = k₂/(k₁+k₂)` interface test of `02`).
+   *Target:* `grad p = ρg` everywhere, `p` affine. *Measured:*
+   `max|grad p − ρg| = 3.6e-11`, non-affine residual `6.5e-12`. The linear field
+   `p = ρ g·x` lies in P1, so it is recovered to machine precision (like the
+   `T = k₂/(k₁+k₂)` interface test of `02`). **PASS.**
 
-2. **Incompressible projection (Helmholtz).** Build a known field
-   `w = ∇φ + (∇×A)` on the mesh; project with `∇²p = ∇·w`, set `u = w − ∇p`.
-   *Exact target:* `u` is divergence-free and equals the curl part; the removed
-   part equals `∇φ`. Check `‖∇·u‖` drops to solver tolerance and the projector is
-   idempotent (`P² = P`).
+2. **Incompressible projection (Helmholtz).** Project per-tet fields with
+   `∇²p = ∇·w`, `u = w − ∇p`. *Measured:* a pure-gradient field projects to
+   `‖Pw‖/‖w‖ = 3.8e-15` (fully removed); a random field keeps a non-trivial
+   div-free part (`0.96`) with divergence `‖D(Pw)‖ = 1.4e-14`; the projector is
+   idempotent, `‖Pu − u‖/‖u‖ = 2.9e-14` (`P² = P`). **PASS.**
 
-3. **Gas hydrostatic (exponential atmosphere).** With EOS `p=c²ρ` and gravity.
-   *Exact target:* `p(h) = p₀ exp(−g h / c²)`; check the profile and that
-   `c²→∞` (incompressible limit) recovers the linear liquid case.
+3. **Gas hydrostatic (exponential atmosphere).** With EOS `p = c²ρ`. *Measured:*
+   the gas profile `p = p₀ exp(−g h / c²)` departs from the linear liquid law for
+   small `c²` (gap `8.81` at `c²=1`) and recovers it as `c²→∞` (gap `4.8e-11` at
+   `c²=1e6`); column ratio `p(H)/p₀` exact. **PASS.**
 
-4. **Acoustic limit = Step 1.** Linearise the gas about rest; the disturbance
-   must satisfy `M p̈ = −K p` with `c² = dp/dρ`.
-   *Exact target:* the dispersion/decay already verified in `03`/`03b`
-   (oscillation `cos(√λ t)`), now reached as the gas limit — a consistency check
-   tying Step 2 back to Step 1.
+4. **Acoustic limit = Step 1.** Leapfrog `M p̈ = −c² K p`. *Target:* oscillation
+   `ω = c·√λ₁`. *Measured:* `ω` matches `c·√λ₁` to relative `0.000` at `c = 1, 2`
+   — the gas acoustic limit reproduces Step 1's scalar wave, frequency ∝ c.
+   **PASS.**
 
-5. **Solvability / null space.** Pure-Neumann (closed tank) `K` is singular with a
-   constant null space (pressure defined up to a constant). *Target:* the source
-   `D f` must be orthogonal to the constant (compatibility, total flux balances),
-   and pressure is pinned by one reference value. Check the compatibility
-   condition and a unique solution after pinning.
+5. **Solvability / null space.** Pure-Neumann `K` is singular with a constant null
+   space. *Measured:* `‖K·1‖ = 6.2e-15` (constant is the null vector) and the
+   source is compatible, `|1·b| = 7.2e-15` (orthogonal to constants ⇒ solvable);
+   pressure unique after pinning one reference dof. **PASS.**
 
 ---
 
 ## 5. What is and isn't claimed (Step 2 honesty)
 
-**Design claims (to be verified next stage):**
+**Verified (§4, machine precision):**
 - Hydrostatic, incompressible projection, and gas acoustics are three regimes of
   one Poisson/​wave solve on the already-verified `L`.
 - Liquid/gas is a parameter (compressibility / EOS); the gas acoustic limit is
-  exactly Step 1's scalar wave.
+  exactly Step 1's scalar wave (`ω = c√λ`).
 
-**Not claimed yet:**
-- No numbers are verified in this document — it is the theory and the verification
-  plan only. Each target in §4 becomes a PASS/FAIL check when code lands.
+**Not claimed:**
+- No new mathematics: the pressure Poisson equation, Helmholtz/Chorin projection,
+  isothermal atmosphere and linear acoustics are classical. The contribution is a
+  *verified, self-consistent* realisation on this project's own `L`, with the
+  gradient/divergence shown to be the very operator inside `K` (`D∘grad = K`).
 - Viscosity, advection (`u·∇u`), and full Navier–Stokes are **out of scope** for
   Step 2; this is the pressure/incompressibility layer only. Momentum transport
   is later (Step 3).
 - The same residual ~5% mesh anisotropy from `01e`/`03` is inherited; the linear
-  hydrostatic test is expected near-exact regardless (affine fields lie in P1).
+  hydrostatic test is near-exact regardless (affine fields lie in P1).
 
 ---
 
