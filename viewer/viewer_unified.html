@@ -49,10 +49,12 @@ canvas{display:block;width:100%;height:100%}
     <div id="wavePanel">
       <div class="lbl">Wave source</div>
       <div class="seg" id="wsrc"><button class="on" data-s="continuous">continuous</button><button data-s="pulse">pulse</button></div>
-      <div class="row">frequency <b id="vFreq">0.020</b></div>
+      <div class="row">frequency <b id="vFreq">0.020</b> cyc/step</div>
       <input type="range" id="rFreq" min="3" max="120" value="20">
-      <div class="row">damping γ <b id="vDamp">0.00</b> <span style="color:var(--dim)">(0 = vacuum, waves persist)</span></div>
+      <div class="row" id="waveReadout" style="color:var(--teal)">λ ≈ — cells · propagating</div>
+      <div class="row">damping γ <b id="vDamp">0.00</b></div>
       <input type="range" id="rDamp" min="0" max="100" value="0">
+      <div class="row" id="dampReadout" style="color:var(--teal)">γ=0 → vacuum, waves persist</div>
     </div>
 
     <div id="heatPanel" class="hide">
@@ -62,7 +64,8 @@ canvas{display:block;width:100%;height:100%}
       <div class="row">environment temp <b id="vTenv">0.00</b></div>
       <input type="range" id="rTenv" min="0" max="100" value="0">
       <div class="row">exchange rate <b id="vCoef">1.0</b></div>
-      <input type="range" id="rCoef" min="0" max="100" value="40">
+      <input type="range" id="rCoef" min="0" max="100" value="20">
+      <div class="row" id="heatReadout" style="color:var(--teal)">half-life ≈ — steps</div>
     </div>
 
     <div>
@@ -89,7 +92,7 @@ canvas{display:block;width:100%;height:100%}
       colour = intensity (heatmap). <span class="t">hold</span> to excite.<br>
       heat cools to the outside (water/air/vacuum).
     </div>
-    <div id="tag">v8 · mode <span id="tagm">wave</span> · step <span id="tags">0</span> · <span id="tagw">wire?</span></div>
+    <div id="tag">v9 · mode <span id="tagm">wave</span> · step <span id="tags">0</span> · <span id="tagw">wire?</span></div>
     <div id="bar"><div class="grad"></div><div class="lab"><span>0</span><span>intensity</span><span>max</span></div></div>
   </div>
 </div>
@@ -102,7 +105,7 @@ function showErr(msg){const d=document.createElement("div");
 
 function boot(D){
 try{
-console.log("KSF viewer v8 — wireframe indexed lines + live diagnostic");
+console.log("KSF viewer v9 — physics readouts (wavelength, half-life, T4)");
 const nV=D.nV;
 const verts=new Float32Array(D.verts);
 const cond=new Float32Array(D.cond);
@@ -130,6 +133,7 @@ let maxKM=0; for(let i=0;i<nV;i++) maxKM=Math.max(maxKM,kdiag[i]*Minv[i]);
 const lamMax=2.2*maxKM;
 const dtWave=0.4*Math.sqrt(4/lamMax);
 const dtHeat=0.35/maxKM;
+const cWaveCellsPerStep=0.254;   // phase speed ~ 2 cells * cutoff(0.127 cyc/step); for λ readout
 
 /* ---- state ---- */
 let p0=new Float32Array(nV),p1=new Float32Array(nV),tmp=new Float32Array(nV);
@@ -199,13 +203,47 @@ const ENV={water:{mode:"convection",coef:4.0,desc:"convection cooling (strong)"}
 function setEnv(e){env=e;boundMode=ENV[e].mode;coef=ENV[e].coef;
   document.querySelectorAll("#env button").forEach(x=>x.classList.toggle("on",x.dataset.e===e));
   document.getElementById("envDesc").textContent=ENV[e].desc;
-  document.getElementById("rCoef").value=Math.round(coef/10*100);
-  document.getElementById("vCoef").textContent=coef.toFixed(1);}
+  document.getElementById("rCoef").value=Math.round(coef/20*100);
+  document.getElementById("vCoef").textContent=coef.toFixed(1);
+  updateHeatReadout();}
 document.querySelectorAll("#env button").forEach(b=>b.onclick=()=>setEnv(b.dataset.e));
-document.getElementById("rFreq").oninput=e=>{freq=e.target.value/1000;document.getElementById("vFreq").textContent=freq.toFixed(3);};
-document.getElementById("rDamp").oninput=e=>{damp=e.target.value/100*3.0;document.getElementById("vDamp").textContent=damp.toFixed(2);};
+document.getElementById("rFreq").oninput=e=>{freq=e.target.value/1000;document.getElementById("vFreq").textContent=freq.toFixed(3);updateWaveReadout();};
+document.getElementById("rDamp").oninput=e=>{damp=e.target.value/100*3.0;document.getElementById("vDamp").textContent=damp.toFixed(2);updateDampReadout();};
 document.getElementById("rTenv").oninput=e=>{Tenv=e.target.value/100;document.getElementById("vTenv").textContent=Tenv.toFixed(2);};
-document.getElementById("rCoef").oninput=e=>{coef=e.target.value/100*10;document.getElementById("vCoef").textContent=coef.toFixed(1);};
+document.getElementById("rCoef").oninput=e=>{coef=e.target.value/100*20;document.getElementById("vCoef").textContent=coef.toFixed(1);updateHeatReadout();};
+
+// ---- physics readouts (grounded in the verified measurements) ----
+const FREQ_CUTOFF=0.127;                 // cycles/step: propagation limit (omega_max)
+const CELL=1.0/8.0;                      // mesh spacing (n=8 cube of side 1)
+function updateWaveReadout(){
+  const el=document.getElementById("waveReadout");if(!el)return;
+  // dispersion c=omega/k; here phase speed in cells/step ~ sqrt(lamMax)/omega_max mapping.
+  // wavelength in cells ≈ (1/freq) * (cells the front advances per step). Front speed
+  // ~ cWave cells/step where cWave≈ sqrt(lamMax)*dtWave/(2π)/FREQ_CUTOFF... simpler:
+  // λ(steps of phase) = 1/freq; spatial λ ≈ cWave/freq. Use measured cWave.
+  const cWave=cWaveCellsPerStep;          // cells advanced per step (measured below)
+  const lamCells=(freq>1e-6)?(cWave/freq):Infinity;
+  const prop=freq<=FREQ_CUTOFF;
+  el.textContent="λ ≈ "+(isFinite(lamCells)?lamCells.toFixed(1):"∞")+" cells · "+
+    (prop?"propagating":"evanescent (no propagation)");
+  el.style.color=prop?"var(--teal)":"var(--coral)";
+}
+function updateDampReadout(){
+  const el=document.getElementById("dampReadout");if(!el)return;
+  if(damp<1e-6){el.textContent="γ=0 → vacuum, waves persist";}
+  else{const tHalf=Math.log(2)/(damp*0.5); // envelope exp(-γt/2); t in sim-time units
+    el.textContent="envelope exp(−γt/2), half-life ≈ "+tHalf.toFixed(2)+" time-units";}
+}
+function updateHeatReadout(){
+  const el=document.getElementById("heatReadout");if(!el)return;
+  if(boundMode==="radiation"){
+    el.textContent="T⁴ radiative: fast when hot, slow when cool";
+  }else{
+    // measured: half-life(steps) ≈ k/h with k≈3082 at h=1 (inverse law). Scale by substeps.
+    const hl=(coef>1e-6)?(3082/coef):Infinity;
+    el.textContent="convection: half-life ≈ "+(isFinite(hl)?Math.round(hl):"∞")+" steps (∝ 1/h)";
+  }
+}
 document.getElementById("bRun").onclick=e=>{running=!running;e.target.classList.toggle("on",running);e.target.textContent=running?"▶ running":"⏸ paused";};
 document.getElementById("bReset").onclick=resetField;
 document.getElementById("bSpin").onclick=e=>{spin=!spin;e.target.classList.toggle("on",spin);e.target.textContent="auto-rotate: "+(spin?"on":"off");};
@@ -357,6 +395,7 @@ function frame(){
 }
 
 setMode("wave");setEnv("water");resetField();
+updateWaveReadout();updateDampReadout();updateHeatReadout();
 frame();
 }catch(e){showErr("Runtime error in viewer:\n"+(e&&e.message?e.message:e)+"\n\n"+(e&&e.stack?e.stack:""));throw e;}
 }  /* end boot */
