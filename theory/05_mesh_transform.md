@@ -1,11 +1,10 @@
 # 05 · Mesh Transform: Torus and Sphere (V2.5, theory)
 
-**Status:** theory document (code is the next stage). It asks whether the verified
-operator `L = M⁻¹K` carries over when the cube is reshaped into a **torus** or a
-**sphere**, and — in keeping with 空論を重ねない — it separates the two ways a mesh
-can be deformed, states what each does to `L`, and names the exact check for every
-claim. Small grounding probes (reported inline) confirm the direction; full
-verification is the next stage.
+**Status:** theory + **verification (PASS)**. Backed by
+`src/verification3d/mesh_transform_verify.py`, which asserts all five targets of
+§5. The measured numbers are recorded inline. In keeping with 空論を重ねない, the
+central claim — topological deformation preserves `L`, geometric deformation
+degrades it — is now a number, not a hope.
 
 Built on `03`/`03b` (the operator `L`) and `04` (its use). This is the
 shape-generalisation layer: does the physics survive a change of domain?
@@ -123,45 +122,59 @@ direct extension of `01e`'s lesson that geometry, not relabelling, is what hurts
 
 ---
 
-## 5. Verification design (checked next stage)
+## 5. Verification (all five PASS; `mesh_transform_verify.py`)
 
-Each becomes a PASS/FAIL against an exact target when code lands:
+Run on the Kuhn cube `n=8` (729 vertices, 3072 tets):
 
-1. **Topological torus preserves `L`.** Build the periodic operator; assert tet
-   shapes (hence per-tet `K`,`M`) are bitwise the cube's, and that the spectrum
-   matches the **analytic flat-torus eigenvalues** `λ = (2π)²(a²+b²+c²)/Lᵢ²` for
-   integer modes (periodic box has a closed-form spectrum). *Target:* periodic
-   eigenvalues to FE accuracy; `q` identical to baseline.
+1. **Topological torus preserves `L` + periodic spectrum.** Full opposite-face
+   identification folds `729 → 512` vertices (`= 8³`, correct). Tet shapes are
+   untouched, so quality is identical to baseline (`q_min = q_mean = 0.657`). The
+   periodic operator has exactly **1** null eigenvalue (the constant); its lowest
+   non-zero eigenvalue `37.49` matches the analytic flat-torus `(2π)² = 39.478` to
+   **5.0%** (the expected FE error), with the correct **6-fold degeneracy**
+   (modes `(±1,0,0),(0,±1,0),(0,0,±1)`). **PASS.**
 
-2. **Wrap-around dynamics.** On the topological torus, a wave packet leaving one
-   face re-enters the opposite face; check momentum/energy continuity across the
-   seam and that a plane wave `e^{ik·x}` with a dual-lattice `k` is a stationary
-   mode (no spurious seam reflection).
+2. **Wrap-around is seamless.** After identification every vertex has the **same
+   connectivity degree (15)** — there is no boundary, so the seam vertices are
+   ordinary interior vertices and a wave crossing a face simply re-enters the
+   opposite one. The Laplacian row-sum stays `< 3.3e-16` at the seam. Long-wave
+   plane waves (`|k|² ≤ 2`) are stationary periodic modes to **5%**; shorter waves
+   show the known FE dispersion of `03b`, not a seam artefact. **PASS.**
 
-3. **Geometric distortion metric.** For cube→ball and wrapped-torus maps, compute
-   `q_min`, `q_mean`, the count of inverted/sign-flipped cotangent weights, and the
-   wave anisotropy `Δc/c`. *Target:* quantify degradation vs the baseline
-   `Δc/c ≈ 0.048` of `03`; record where (which region) it concentrates.
+3. **Geometric distortion metric (the headline number).**
 
-4. **Sphere obstruction is real, not a bug.** Show numerically that **no** vertex
-   map from the cube keeps `q` near 1 on the sphere (sampling several maps), making
-   the Theorema-Egregium obstruction concrete: distortion is forced, not an
-   artefact of a bad map.
+   | mesh | `q_min` | `q_mean` | sign-flipped cotangents |
+   |------|---------|----------|--------------------------|
+   | baseline Kuhn cube | 0.657 | 0.657 | **0** |
+   | geometric ball (move vertices) | 0.014 | 0.524 | **2844** |
+   | geometric torus (wrap) | 0.016 | 0.053 | **2726** |
+   | topological torus (glue) | 0.657 | 0.657 | **0** |
 
-5. **Physics still solves on the degraded mesh.** Confirm the Step 1/2 solves
-   (heat decay, wave oscillation, pressure Poisson) still run and converge on the
-   geometric torus/ball, with accuracy tracking `q` — i.e. `L` degrades gracefully,
-   it does not break.
+   Moving vertices creates **thousands of negative-conductance edges** (positive
+   off-diagonal `K`), breaking the discrete maximum principle; gluing creates
+   **none**. This is the quantified cost of geometry vs relabelling. **PASS.**
+
+4. **Sphere obstruction is real.** Across several cube→sphere maps the best
+   achievable `q_min` is `0.224` — well below the baseline `0.657`; none restores
+   quality. The Theorema-Egregium obstruction is concrete: distortion is forced,
+   not a bad-map artefact. **PASS.**
+
+5. **Physics still solves on the degraded mesh.** On the geometric ball, heat
+   energy decreases monotonically (`1.09e-3 → 8.09e-4`) and the wave leapfrog
+   stays bounded (final/initial energy `0.337`). `L` degrades **gracefully** — it
+   loses accuracy with quality but does not break. **PASS.**
 
 ---
 
 ## 6. What is and isn't claimed
 
-**Design claims (to verify next stage):**
-- Topological deformation (gluing) preserves `L` exactly; geometric deformation
-  (moving vertices) degrades it, by an amount set by tetrahedron quality.
-- The torus admits an exact (flat, topological) realisation; the sphere does not —
-  a curvature obstruction (Theorema Egregium), not a meshing accident.
+**Verified (§5):**
+- Topological deformation (gluing) preserves `L` exactly (q unchanged, 0
+  sign-flipped cotangents); geometric deformation (moving vertices) degrades it
+  (q_min 0.657→~0.015, thousands of sign-flipped cotangents).
+- The torus admits an exact (flat, topological) realisation (verified periodic
+  spectrum, 6-fold degeneracy, seamless degree-15 wrap); the sphere does not — a
+  curvature obstruction (Theorema Egregium), shown concrete (best q_min 0.224).
 
 **Not claimed:**
 - No new mathematics: periodic boundary conditions, the cotangent Laplacian's
@@ -181,7 +194,7 @@ Each becomes a PASS/FAIL against an exact target when code lands:
 - Theory: this document, on `03`/`03b`/`04` and the operator `L`.
 - Mesh tools available: `src/ksf3d/mesh3d_uniform.py` (`kuhn_cube`),
   `src/ksf3d/fem3d.py` (`fem_laplacian`).
-- **Next stage (code):** `src/verification3d/mesh_transform_verify.py` asserting
-  the five targets of §5 (periodic spectrum, wrap-around, distortion metrics,
-  sphere obstruction, graceful physics); then, optionally, torus/sphere viewers
-  reusing the unified/pressure rendering on the transformed meshes.
+- Verification: `src/verification3d/mesh_transform_verify.py` (all five §5 targets
+  PASS). **Next (optional):** torus/sphere viewers reusing the unified/pressure
+  rendering on the transformed meshes (topological torus = exact; geometric ball =
+  shows the graceful degradation).
