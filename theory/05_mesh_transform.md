@@ -166,6 +166,55 @@ Run on the Kuhn cube `n=8` (729 vertices, 3072 tets):
 
 ---
 
+## 5b. Can a different norm remove the negative cotangents?
+
+A natural question (and a good instinct): the sign-flipped cotangents of §5's
+geometric meshes are *weights* — can a different weight formula remove them?
+`src/verification3d/cotangent_signflip_verify.py` answers with numbers; the answer
+is "not for free." Four findings:
+
+1. **Mechanism — sign-flips ⟺ obtuse dihedral angles.** A cotangent weight goes
+   negative exactly when the relevant dihedral angle exceeds 90°. The Kuhn cube
+   sits *exactly at 90°* (right-angle dihedrals → 0 obtuse, 0 flips), so it is on
+   the knife-edge: **any** geometric deformation tips some dihedrals obtuse and
+   sign-flips appear. Measured (n=6 ball): 816 flips ↔ 1260 obtuse dihedrals;
+   baseline cube 0 ↔ 0. (This is the same right-angle degeneracy that once dropped
+   wireframe edges in the viewer.)
+
+2. **Formula tradeoff — removing flips by norm change loses linear-exactness.** On
+   one distorted ball mesh:
+
+   | operator | sign-flips | harmonic error (linear `u=x`) |
+   |----------|-----------|-------------------------------|
+   | cotangent (FE) | 816 | **2.8e-16** (exact) |
+   | graph / uniform | **0** | 8.7e-2 |
+   | clamp `max(w,0)` | **0** | 2.2e-2 |
+
+   The cotangent weight is the one that reproduces linear fields exactly — the very
+   property behind `02`'s interface `T=k₂/(k₁+k₂)` and `04`'s `D∘grad = K`. Uniform
+   and clamped weights kill the sign-flips but **lose that exactness**. Changing the
+   norm trades the verification foundation for cosmetic positivity.
+
+3. **Mesh improvement helps quality but not flips.** Quality-guarded Laplacian
+   smoothing (move a vertex only if local quality doesn't drop) raises
+   `q_min 0.401→0.513` and keeps exactness at machine precision — but sign-flips do
+   **not** fall (816→838). A flip is an **edge-summed** property of the dihedrals
+   around an edge, and globally non-obtuse ("well-centered") tetrahedral meshes are
+   a genuinely hard problem in 3D. Volume-quality and dihedral-obtuseness are
+   different things.
+
+4. **The clean escape.** Only **geometry preservation** gives both at once: the
+   undeformed cube (= the topological torus's tetrahedra) has 0 sign-flips **and**
+   reproduces linear fields to 3.3e-16. That is exactly why the **topological**
+   torus is the clean path, and why a geometrically deformed mesh is accepted only
+   with **graceful degradation** (§5 check 5), never repaired by a cheaper norm.
+
+**Takeaway.** The instinct was right that the weights are where the negativity
+lives — but the cotangent weight is load-bearing (it is what makes the operator
+*exact*), so it cannot be swapped out without dismantling the verification. The
+negative conductances are an honest signature of moving vertices on a right-angle
+mesh, removable only by not moving them (topological) or by hard global remeshing.
+
 ## 6. What is and isn't claimed
 
 **Verified (§5):**

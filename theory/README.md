@@ -19,7 +19,7 @@ ones. All work below is on the equally-spaced **Kuhn cube** (`n=8`: 729 vertices
 | 03 | `03_unified_scalar.md` | **the consolidation**: one operator `L = M⁻¹K` drives heat (decay `exp(−λt)`) and waves (oscillation `cos(√λt)`) on the same spectrum | `unified_scalar_verify.py` | done |
 | 03b | `03b_dynamics_and_boundaries.md` | **Step 1.5**: damping (`exp(−γt/2)`, γ=0 persists), dispersion cutoff (`f≈0.127` cyc/step), Robin convection (`t½ ∝ 1/h`), Stefan–Boltzmann radiation (`T⁴`); the parametrised viewer instrument | `dynamics_boundary_verify.py` | done |
 | 04 | `04_pressure_field.md` | **Step 2**: pressure as one Poisson solve `K p = D f` — hydrostatic (`p=ρgh`), incompressible projection (`∇·u=0`), and gas acoustics (`c²=dp/dρ`, = Step 1 wave) as three regimes; liquid/gas by parameters | `pressure_field_verify.py` | done |
-| 05 | `05_mesh_transform.md` | **V2.5**: reshape the cube to torus/sphere. Topological (gluing) preserves `L` exactly (0 sign-flips); geometric (moving vertices) degrades it (thousands of sign-flipped cotangents). Torus = flat = exact (periodic spectrum, 6-fold degeneracy); sphere = curved = forced distortion (Theorema Egregium, best q_min 0.224) | `mesh_transform_verify.py` | done |
+| 05 | `05_mesh_transform.md` | **V2.5**: reshape cube to torus/sphere. Topological (gluing) preserves `L` exactly (0 sign-flips); geometric (moving vertices) degrades it. Torus=flat=exact (periodic spectrum, 6-fold degeneracy); sphere=curved=forced distortion (Theorema Egregium). §5b: sign-flips ⟺ obtuse dihedrals; norm change removes them but loses linear-exactness (cotangent is load-bearing) | `mesh_transform_verify.py`, `cotangent_signflip_verify.py` | done |
 
 ## The one-line result
 
