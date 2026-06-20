@@ -19,6 +19,7 @@ ones. All work below is on the equally-spaced **Kuhn cube** (`n=8`: 729 vertices
 | 03 | `03_unified_scalar.md` | **the consolidation**: one operator `L = M⁻¹K` drives heat (decay `exp(−λt)`) and waves (oscillation `cos(√λt)`) on the same spectrum | `unified_scalar_verify.py` | done |
 | 03b | `03b_dynamics_and_boundaries.md` | **Step 1.5**: damping (`exp(−γt/2)`, γ=0 persists), dispersion cutoff (`f≈0.127` cyc/step), Robin convection (`t½ ∝ 1/h`), Stefan–Boltzmann radiation (`T⁴`); the parametrised viewer instrument | `dynamics_boundary_verify.py` | done |
 | 04 | `04_pressure_field.md` | **Step 2**: pressure as one Poisson solve `K p = D f` — hydrostatic (`p=ρgh`), incompressible projection (`∇·u=0`), and gas acoustics (`c²=dp/dρ`, = Step 1 wave) as three regimes; liquid/gas by parameters | `pressure_field_verify.py` | done |
+| 05 | `05_mesh_transform.md` | **V2.5 (theory)**: reshape the cube to torus/sphere. Topological deformation (gluing) preserves `L` exactly; geometric (moving vertices) degrades it by tet-quality. Torus = flat = exact; sphere = curved = forced distortion (Theorema Egregium) | planned: `mesh_transform_verify.py` | theory only |
 
 ## The one-line result
 
@@ -45,5 +46,9 @@ wireframe.
 precision). Pressure is one Poisson solve `K p = D f` on the verified `L`,
 unifying hydrostatic (`p=ρgh`), incompressible projection (`∇·u=0`), and gas
 acoustics (the Step 1 wave as the compressible limit), liquid/gas by parameters.
-**Next:** a dedicated pressure viewer (`viewer/viewer_pressure.html`) exposing the
-§3 parameters (ρ, g, compressibility, boundary, source).
+**Next:** a dedicated pressure viewer is built (`viewer/viewer_pressure.html`
+with `api/` server solve). **V2.5 — mesh transform** theory is written
+(`05_mesh_transform.md`): reshape the cube to torus (flat → exact, topological)
+and sphere (curved → forced distortion, geometric), measuring what each does to
+`L`. Code next: `mesh_transform_verify.py` (periodic spectrum, wrap-around,
+distortion metrics, sphere obstruction, graceful physics).
