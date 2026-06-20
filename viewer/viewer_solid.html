@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KSF · one operator, three solids — heat · wave · fluid</title>
+<style>
+:root{--bg:#070d10;--ink:#cfe3e8;--dim:#5a7a84;--amber:#e8b75a;--teal:#4ecdc4;
+  --line:#152028;--panel:#0c161b}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+#wrap{display:flex;height:100%}
+#side{width:238px;min-width:238px;background:var(--panel);border-right:1px solid var(--line);
+  padding:11px 12px;display:flex;flex-direction:column;gap:9px;overflow-y:auto}
+.lbl{font-size:10px;letter-spacing:.11em;color:var(--dim);text-transform:uppercase;margin-bottom:5px}
+.seg{display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;margin-bottom:4px}
+.seg button{flex:1;padding:7px 0;background:transparent;border:none;color:var(--dim);font:inherit;font-size:11px;cursor:pointer}
+.seg button.on{background:rgba(232,183,90,.16);color:var(--amber)}
+.seg.phys button.on{background:rgba(78,205,196,.16);color:var(--teal)}
+.btn{display:block;width:100%;padding:6px 10px;background:transparent;border:1px solid var(--line);
+  border-radius:5px;color:var(--ink);font:inherit;font-size:12px;cursor:pointer;margin-bottom:4px;text-align:left}
+.btn:hover{border-color:var(--dim)} .btn.on{border-color:var(--amber);color:var(--amber)}
+.row{font-size:11px;color:var(--dim);margin:3px 0 3px}.row b{color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--amber);margin-bottom:4px}
+.hide{display:none}
+#stage{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;left:12px;bottom:12px;font-size:11px;color:var(--dim);
+  background:rgba(7,13,16,.86);padding:9px 11px;border:1px solid var(--line);border-radius:6px;
+  line-height:1.75;max-width:330px;pointer-events:none}
+#hud b{color:var(--ink)} .a{color:var(--amber)} .t{color:var(--teal)}
+#tag{position:absolute;right:12px;top:12px;font-size:11px;color:var(--dim);
+  background:rgba(7,13,16,.86);padding:6px 10px;border:1px solid var(--line);border-radius:6px}
+#bar{position:absolute;right:12px;bottom:12px;width:176px;font-size:10px;color:var(--dim)}
+#bar .grad{height:10px;border-radius:3px;border:1px solid var(--line);
+  background:linear-gradient(90deg,#1f4ea8,#2fa36b,#e8d34a,#e8902f,#e0432f,#7a3fb0,#ffffff)}
+#bar .lab{display:flex;justify-content:space-between;margin-top:2px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="side">
+    <div>
+      <div class="lbl">Solid model</div>
+      <div class="seg" id="shape">
+        <button class="on" data-s="cube">cube</button>
+        <button data-s="ball">sphere</button>
+        <button data-s="torus">torus</button>
+      </div>
+      <div class="row" id="shapeDesc">box domain</div>
+    </div>
+    <div>
+      <div class="lbl">Physics (one operator L)</div>
+      <div class="seg phys" id="phys">
+        <button class="on" data-p="heat">heat</button>
+        <button data-p="wave">wave</button>
+      </div>
+      <div class="seg phys" id="phys2">
+        <button data-p="liquid">liquid</button>
+        <button data-p="gas">gas</button>
+      </div>
+      <div class="row" id="physDesc">heat diffusion · ∂T/∂t = −L T</div>
+    </div>
+
+    <div id="pHeat">
+      <div class="lbl">Parameters</div>
+      <div class="row">diffusion time <b id="vSteps">60</b> steps</div>
+      <input type="range" id="rSteps" min="0" max="300" value="60">
+    </div>
+    <div id="pWave" class="hide">
+      <div class="lbl">Parameters</div>
+      <div class="row">wave phase <b id="vSteps2">90</b> steps</div>
+      <input type="range" id="rSteps2" min="0" max="400" value="90">
+    </div>
+    <div id="pLiquid" class="hide">
+      <div class="lbl">Parameters</div>
+      <div class="row">gravity |g| <b id="vG">1.0</b></div>
+      <input type="range" id="rG" min="0" max="100" value="50">
+    </div>
+    <div id="pGas" class="hide">
+      <div class="lbl">Parameters</div>
+      <div class="row">stiffness c² <b id="vC2">0.18</b></div>
+      <input type="range" id="rC2" min="3" max="200" value="18">
+    </div>
+
+    <div>
+      <div class="lbl">Source of values</div>
+      <button class="btn on" id="bPreset">▣ preset (instant, verified)</button>
+      <button class="btn" id="bSolve">⟳ solve on server (custom)</button>
+      <div class="row" id="solveState">showing preset</div>
+    </div>
+    <div>
+      <div class="lbl">View</div>
+      <button class="btn on" id="bSpin">auto-rotate: on</button>
+      <button class="btn" id="bWire">wireframe: off</button>
+      <button class="btn" id="bSlice">slice: off</button>
+      <input type="range" id="rSlice" min="0" max="100" value="50">
+      <button class="btn" id="bTrans">transparency: off</button>
+    </div>
+  </div>
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <div id="hud">
+      <b>One operator L = M⁻¹K, three solids.</b><br>
+      <span class="a">cube · sphere · torus</span> all carry the same
+      <span class="t">heat, wave, and fluid</span> physics — the V2.5 transform
+      result made visible. Every value is the
+      <span class="t">verified Python solver</span> (preset or server), no in-viewer approximation.
+    </div>
+    <div id="tag">v1 · <span id="tagm">cube · heat</span></div>
+    <div id="bar"><div class="grad"></div><div class="lab"><span id="barLo">low</span><span id="barMid">field</span><span id="barHi">high</span></div></div>
+  </div>
+</div>
+<script src="data_solid.js?v=1"></script>
+<script>
+"use strict";
+function showErr(m){const d=document.createElement("div");
+  d.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#e0654f;background:#0c161b;border:1px solid #e0654f;padding:14px 18px;border-radius:8px;max-width:78%;font-size:12px;line-height:1.6;white-space:pre-wrap;z-index:9";
+  d.textContent=m;const s=document.getElementById("stage");if(s)s.appendChild(d);}
+
+function boot(D){
+try{
+const SHAPES=D.shapes;
+let shape="cube", physics="heat", signed=false;
+let cur=null;                          // current shape's mesh GL buffers
+let disp=new Float32Array(0);
+let spin=true,wireOn=false,sliceOn=false,trans=false,sliceX=0.0;
+let rx=-0.5,ry=0.6,dist=3.0,rotating=false,lx=0,ly=0;
+let params={steps:60,steps2:90,g:1.0,c2:0.18};
+
+const cv=document.getElementById("gl");
+const gl=cv.getContext("webgl",{antialias:true,depth:true,alpha:false});
+if(!gl){showErr("WebGL is unavailable in this browser/context.");return;}
+
+const VS=`attribute vec3 aPos;attribute float aVal;
+uniform mat4 uMVP;uniform float uLift;varying float vVal;varying vec3 vWorld;
+void main(){vVal=aVal;vWorld=aPos;gl_Position=uMVP*vec4(aPos,1.0);gl_Position.z-=uLift*gl_Position.w;}`;
+const FS=`precision mediump float;varying float vVal;varying vec3 vWorld;
+uniform float uAlpha;uniform float uSliceX;uniform float uSlice;uniform float uFlat;uniform vec3 uFlatCol;
+vec3 ramp(float t){vec3 c0=vec3(0.12,0.31,0.66),c1=vec3(0.18,0.64,0.42),c2=vec3(0.91,0.83,0.29),
+  c3=vec3(0.91,0.56,0.18),c4=vec3(0.88,0.26,0.18),c5=vec3(0.48,0.25,0.69),c6=vec3(1.0,1.0,1.0);
+  t=clamp(t,0.0,1.0);float s=t*6.0;
+  if(s<1.0)return mix(c0,c1,s);if(s<2.0)return mix(c1,c2,s-1.0);if(s<3.0)return mix(c2,c3,s-2.0);
+  if(s<4.0)return mix(c3,c4,s-3.0);if(s<5.0)return mix(c4,c5,s-4.0);return mix(c5,c6,s-5.0);}
+void main(){if(uSlice>0.5&&vWorld.x>uSliceX)discard;
+  if(uFlat>0.5){gl_FragColor=vec4(uFlatCol,1.0);return;}
+  gl_FragColor=vec4(ramp(vVal),uAlpha);}`;
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
+  if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o;}
+let pTri;try{pTri=(()=>{const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));
+  gl.attachShader(p,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;})();}
+  catch(e){showErr("Shader error: "+e.message);throw e;}
+
+// build GL buffers for a shape
+function makeShape(name){
+  const S=SHAPES[name];
+  const verts=new Float32Array(S.verts);
+  const btris=new Uint16Array(S.btris), atris=new Uint16Array(S.atris), wed=new Uint16Array(S.wedges);
+  const posBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,posBuf);gl.bufferData(gl.ARRAY_BUFFER,verts,gl.STATIC_DRAW);
+  const valBuf=gl.createBuffer();
+  const bIdx=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,bIdx);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,btris,gl.STATIC_DRAW);
+  const aIdx=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,aIdx);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,atris,gl.STATIC_DRAW);
+  const lIdx=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,lIdx);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,wed,gl.STATIC_DRAW);
+  return {nV:S.nV,verts,posBuf,valBuf,bIdx,aIdx,lIdx,nBT:btris.length/3,nAT:atris.length/3,nW:wed.length/2,
+          presets:S.presets};
+}
+const built={};
+function shapeGL(name){if(!built[name])built[name]=makeShape(name);return built[name];}
+
+function setField(p,isSigned){
+  signed=isSigned; const nV=cur.nV; disp=new Float32Array(nV);
+  let lo=Infinity,hi=-Infinity; for(let i=0;i<nV;i++){if(p[i]<lo)lo=p[i];if(p[i]>hi)hi=p[i];}
+  const span=(hi-lo)||1;
+  for(let i=0;i<nV;i++) disp[i]= isSigned?Math.min(Math.abs(p[i]),1.0):(p[i]-lo)/span;
+  gl.bindBuffer(gl.ARRAY_BUFFER,cur.valBuf);gl.bufferData(gl.ARRAY_BUFFER,disp,gl.STATIC_DRAW);
+  document.getElementById("barLo").textContent=isSigned?"0":lo.toFixed(2);
+  document.getElementById("barHi").textContent=isSigned?"max|·|":hi.toFixed(2);
+  document.getElementById("barMid").textContent={heat:"temperature",wave:"amplitude",liquid:"pressure",gas:"density"}[physics];
+}
+function usePreset(){
+  const pr=cur.presets[physics];
+  if(!pr){showErr("missing preset "+shape+"/"+physics);return;}
+  setField(Float32Array.from(pr.p),!!pr.signed);
+  document.getElementById("solveState").textContent="showing preset";
+}
+
+const SHAPEDESC={cube:"box domain",ball:"solid sphere (geometric deform)",torus:"solid ring (x-periodic, wave wraps)"};
+const PHYSDESC={heat:"heat diffusion · ∂T/∂t = −L T",wave:"scalar wave · M p̈ = −K p",
+  liquid:"liquid pressure · K p = D(ρg)",gas:"gas density · p₀e^(−gz/c²)"};
+function refreshTag(){document.getElementById("tagm").textContent=
+  ({cube:"cube",ball:"sphere",torus:"torus"}[shape])+" · "+physics;}
+function setShape(s){shape=s; cur=shapeGL(s);
+  document.querySelectorAll("#shape button").forEach(x=>x.classList.toggle("on",x.dataset.s===s));
+  document.getElementById("shapeDesc").textContent=SHAPEDESC[s];
+  // recenter camera distance for ring
+  dist = s==="torus"?3.6:(s==="ball"?2.6:3.0);
+  refreshTag(); usePreset();
+}
+function setPhys(p){physics=p;
+  document.querySelectorAll("#phys button,#phys2 button").forEach(x=>x.classList.toggle("on",x.dataset.p===p));
+  document.getElementById("physDesc").textContent=PHYSDESC[p];
+  document.getElementById("pHeat").classList.toggle("hide",p!=="heat");
+  document.getElementById("pWave").classList.toggle("hide",p!=="wave");
+  document.getElementById("pLiquid").classList.toggle("hide",p!=="liquid");
+  document.getElementById("pGas").classList.toggle("hide",p!=="gas");
+  refreshTag(); usePreset();
+}
+document.querySelectorAll("#shape button").forEach(b=>b.onclick=()=>setShape(b.dataset.s));
+document.querySelectorAll("#phys button,#phys2 button").forEach(b=>b.onclick=()=>setPhys(b.dataset.p));
+document.getElementById("rSteps").oninput=e=>{params.steps=+e.target.value;document.getElementById("vSteps").textContent=params.steps;};
+document.getElementById("rSteps2").oninput=e=>{params.steps2=+e.target.value;document.getElementById("vSteps2").textContent=params.steps2;};
+document.getElementById("rG").oninput=e=>{params.g=e.target.value/50;document.getElementById("vG").textContent=params.g.toFixed(1);};
+document.getElementById("rC2").oninput=e=>{params.c2=e.target.value/100;document.getElementById("vC2").textContent=params.c2.toFixed(2);};
+document.getElementById("bPreset").onclick=usePreset;
+document.getElementById("bSolve").onclick=solveOnServer;
+document.getElementById("bSpin").onclick=e=>{spin=!spin;e.target.classList.toggle("on",spin);e.target.textContent="auto-rotate: "+(spin?"on":"off");};
+document.getElementById("bWire").onclick=e=>{wireOn=!wireOn;e.target.classList.toggle("on",wireOn);e.target.textContent="wireframe: "+(wireOn?"on":"off");};
+document.getElementById("bSlice").onclick=e=>{sliceOn=!sliceOn;e.target.classList.toggle("on",sliceOn);e.target.textContent="slice: "+(sliceOn?"on":"off");};
+document.getElementById("rSlice").oninput=e=>{sliceX=(e.target.value/100-0.5)*2.2;};
+document.getElementById("bTrans").onclick=e=>{trans=!trans;e.target.classList.toggle("on",trans);e.target.textContent="transparency: "+(trans?"on":"off");};
+
+function solveOnServer(){
+  const st=document.getElementById("solveState");st.textContent="solving on server…";
+  const body={shape:shape,physics:physics,steps:(physics==="wave"?params.steps2:params.steps),g:params.g,c2:params.c2};
+  fetch("api/solve_solid.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+    .then(r=>r.json()).then(d=>{if(!d.ok){st.textContent="server error: "+(d.error||"?");return;}
+      setField(Float32Array.from(d.p),!!d.signed);st.textContent="showing server solve ✓";})
+    .catch(e=>{st.textContent="API unreachable (use preset). "+e.message;});
+}
+
+const MM={mul:(a,b)=>{const o=new Array(16);for(let r=0;r<4;r++)for(let c=0;c<4;c++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s;}return o;},
+  persp:(f,a,n,fa)=>{const t=1/Math.tan(f/2);return[t/a,0,0,0,0,t,0,0,0,0,(fa+n)/(n-fa),-1,0,0,2*fa*n/(n-fa),0];},
+  tr:(x,y,z)=>[1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1],
+  rx:a=>{const c=Math.cos(a),s=Math.sin(a);return[1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1];},
+  ry:a=>{const c=Math.cos(a),s=Math.sin(a);return[c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1];}};
+function resize(){const d=Math.min(devicePixelRatio||1,2);cv.width=cv.clientWidth*d;cv.height=cv.clientHeight*d;gl.viewport(0,0,cv.width,cv.height);}
+window.addEventListener("resize",resize);resize();
+gl.clearColor(0.027,0.051,0.063,1);
+cv.addEventListener("mousedown",e=>{rotating=true;lx=e.clientX;ly=e.clientY;});
+window.addEventListener("mouseup",()=>rotating=false);
+window.addEventListener("mousemove",e=>{if(!rotating)return;ry+=(e.clientX-lx)*0.008;rx+=(e.clientY-ly)*0.008;lx=e.clientX;ly=e.clientY;});
+cv.addEventListener("wheel",e=>{dist*=(1+Math.sign(e.deltaY)*0.08);dist=Math.max(1.5,Math.min(9,dist));e.preventDefault();},{passive:false});
+function mvp(){const proj=MM.persp(1.0,cv.width/cv.height,0.05,60);const model=MM.mul(MM.ry(ry),MM.rx(rx));return MM.mul(proj,MM.mul(MM.tr(0,0,-dist),model));}
+function attr(name,buf,size){const l=gl.getAttribLocation(pTri,name);if(l<0)return;gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,size,gl.FLOAT,false,0,0);}
+function U(n){return gl.getUniformLocation(pTri,n);}
+
+function frame(){
+  if(spin)ry+=0.003;
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.useProgram(pTri);
+  attr("aPos",cur.posBuf,3);attr("aVal",cur.valBuf,1);
+  gl.uniformMatrix4fv(U("uMVP"),false,mvp());
+  gl.uniform1f(U("uSliceX"),sliceX);gl.uniform1f(U("uSlice"),sliceOn?1.0:0.0);
+  gl.uniform1f(U("uLift"),0.0);gl.uniform1f(U("uFlat"),0.0);
+  if(sliceOn){
+    gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.uniform1f(U("uAlpha"),1.0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,cur.aIdx);gl.drawElements(gl.TRIANGLES,cur.nAT*3,gl.UNSIGNED_SHORT,0);
+  }else{
+    const al=trans?0.5:1.0;gl.uniform1f(U("uAlpha"),al);
+    if(al<1.0){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);}
+    else{gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);}
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,cur.bIdx);gl.drawElements(gl.TRIANGLES,cur.nBT*3,gl.UNSIGNED_SHORT,0);
+  }
+  if(wireOn){
+    gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);
+    gl.uniform1f(U("uLift"),0.004);gl.uniform1f(U("uFlat"),1.0);gl.uniform3f(U("uFlatCol"),0.52,0.55,0.57);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,cur.lIdx);gl.drawElements(gl.LINES,cur.nW*2,gl.UNSIGNED_SHORT,0);
+    gl.uniform1f(U("uLift"),0.0);gl.uniform1f(U("uFlat"),0.0);
+  }
+  requestAnimationFrame(frame);
+}
+setShape("cube"); setPhys("heat");
+frame();
+}catch(e){showErr("Runtime error:\n"+(e&&e.message?e.message:e)+"\n\n"+(e&&e.stack?e.stack:""));throw e;}
+}
+
+(function load(){
+  if(window.KSF_SOLID&&window.KSF_SOLID.shapes){boot(window.KSF_SOLID);return;}
+  fetch("data_solid.js",{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text();})
+   .then(t=>{const m=t.match(/KSF_SOLID\s*=\s*(\{[\s\S]*\})\s*;?\s*$/);if(!m)throw new Error("parse data_solid.js");boot(JSON.parse(m[1]));})
+   .catch(e=>showErr("data_solid.js could not load ("+e.message+").\nEnsure it sits next to viewer_solid.html and is served as JavaScript."));
+})();
+</script>
+</body>
+</html>
