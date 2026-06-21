@@ -11,7 +11,7 @@ ones. All work below is on the equally-spaced **Kuhn cube** (`n=8`: 729 vertices
 | # | Document | What it establishes | Backing code | Status |
 |---|----------|---------------------|--------------|--------|
 | 00 | `00_synthesis.md` / `.tex` / `.pdf` | **Synthesis**: the whole arc (one operator L → heat, wave, pressure, mesh transform) as a readable narrative + verification results appendix. Markdown body, LaTeX/PDF for print | (collects all verify scripts) | done |
-| 00a | `00a_prologue.md` | **Prologue (bilingual)**: how the model was searched for — branch points, the rejected first instinct, conduction done right, the bet on one operator, the verified method; leads into V3. Points to `01e`/`02`/`03` for the settled claims | (references existing verifications) | done |
+| 00a | `00a_prologue.en.md` / `.ja.md` (+ `.tex` / `.pdf`) | **Prologue (EN and JA, separate files)**: how the model was searched for — the rejected first instinct, conduction done right, the bet on one operator, the verified method; leads into V3. Points to `01e`/`02`/`03` for the settled claims | (references existing verifications) | done |
 | 01 | `01_sparameter_wave_propagation.md` | S-parameter / scatter view of wave propagation | `sparam_wave_verify.py` | done |
 | 01b | `01b_sparameter_model.md` | the scatter model in detail | `s3d_sparameter.py` | done |
 | 01c | `01c_planewave_interface.md` | plane wave across a material interface | `sparam_interface_verify.py` | done |
@@ -22,6 +22,7 @@ ones. All work below is on the equally-spaced **Kuhn cube** (`n=8`: 729 vertices
 | 03b | `03b_dynamics_and_boundaries.md` | **Step 1.5**: damping (`exp(−γt/2)`, γ=0 persists), dispersion cutoff (`f≈0.127` cyc/step), Robin convection (`t½ ∝ 1/h`), Stefan–Boltzmann radiation (`T⁴`); the parametrised viewer instrument | `dynamics_boundary_verify.py` | done |
 | 04 | `04_pressure_field.md` | **Step 2**: pressure as one Poisson solve `K p = D f` — hydrostatic (`p=ρgh`), incompressible projection (`∇·u=0`), and gas acoustics (`c²=dp/dρ`, = Step 1 wave) as three regimes; liquid/gas by parameters | `pressure_field_verify.py` | done |
 | 05 | `05_mesh_transform.md` | **V2.5**: reshape cube to torus/sphere. Topological (gluing) preserves `L` exactly (0 sign-flips); geometric (moving vertices) degrades it. Torus=flat=exact (periodic spectrum, 6-fold degeneracy); sphere=curved=forced distortion (Theorema Egregium). §5b: sign-flips ⟺ obtuse dihedrals; norm change removes them but loses linear-exactness (cotangent is load-bearing) | `mesh_transform_verify.py`, `cotangent_signflip_verify.py` | done |
+| 06 | `06_fluid_dynamics.md` | **V3 (theory)**: incompressible Navier–Stokes as the verified Chorin projection of `04` + an advection–diffusion predictor. Three of four terms already verified (`L`, `D∘grad=K`, `P²=P`); only nonlinear advection `C(u)` is new. Staged Stokes→advection→full NS; verified by exact flows (Taylor–Green), MMS, conservation/convergence | planned: `fluid_*_verify.py` | theory only |
 
 ## The one-line result
 
