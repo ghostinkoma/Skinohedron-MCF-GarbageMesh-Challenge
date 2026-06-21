@@ -10,6 +10,7 @@ ones. All work below is on the equally-spaced **Kuhn cube** (`n=8`: 729 vertices
 
 | # | Document | What it establishes | Backing code | Status |
 |---|----------|---------------------|--------------|--------|
+| 00 | `00_synthesis.md` / `.tex` / `.pdf` | **Synthesis**: the whole arc (one operator L → heat, wave, pressure, mesh transform) as a readable narrative + verification results appendix. Markdown body, LaTeX/PDF for print | (collects all verify scripts) | done |
 | 01 | `01_sparameter_wave_propagation.md` | S-parameter / scatter view of wave propagation | `sparam_wave_verify.py` | done |
 | 01b | `01b_sparameter_model.md` | the scatter model in detail | `s3d_sparameter.py` | done |
 | 01c | `01c_planewave_interface.md` | plane wave across a material interface | `sparam_interface_verify.py` | done |

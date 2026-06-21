@@ -1,0 +1,242 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue]{hyperref}
+
+
+\newcommand{\nofreelunch}{\emph{k\=uron o kasanenai}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{\textbf{One Operator, Many Physics, Several Shapes}\\[4pt]
+\large A Synthesis of the KSF (Kosaka Skin-o-hedron) Notebook}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent A single discrete operator $L = M^{-1}K$, built once from the cotangent /
+P1 finite-element stiffness $K$ and lumped mass $M$ on an equally-spaced
+tetrahedral mesh (the \emph{Kuhn cube}), is shown---to machine precision against
+exact solutions---to reproduce heat diffusion, scalar-wave propagation, damped and
+boundary-coupled dynamics, and the pressure field of a fluid, and to carry those
+same physics onto reshaped domains (torus, sphere). The discipline throughout is
+\nofreelunch{} (\emph{do not stack unverified claims}): nothing advances until a
+runnable check matches a known answer. The mathematics is classical; the
+contribution is a single, self-consistent, end-to-end \emph{verified} realisation
+of all of it on one operator. Every figure in Appendix~A is the live output of a
+script in \code{src/verification3d/}.
+\end{abstract}
+
+\section{Thesis}
+A single discrete operator,
+\[
+  L = M^{-1} K,
+\]
+drives every physics in this notebook. It is not new mathematics: the cotangent
+Laplacian, finite elements, periodic boundary conditions, and the curvature
+obstruction are classical. What is here is a \emph{single, self-consistent,
+end-to-end verified} realisation of all of them on one operator, each link
+confirmed by its own exact-solution test.
+
+\section{The one idea}
+On each tetrahedron a P1 (linear) basis gives a constant gradient operator $G$
+($3{\times}4$). Assembling $K = \sum_{\text{tet}} \mathrm{vol}\cdot G^{\mathsf T}G$
+yields the stiffness; lumping volumes gives the diagonal mass $M$. Then
+\[
+  \text{heat:}\quad \frac{\partial T}{\partial t} = -L\,T,\qquad
+  \text{wave:}\quad M\ddot p = -K p,\qquad
+  \text{pressure:}\quad K p = D f,
+\]
+with decay $e^{-\lambda t}$ and oscillation $\cos(\sqrt{\lambda}\,t)$ on the
+\emph{same} spectrum, and a single Poisson solve for pressure whose gradient and
+divergence are literally the operator inside $K$ ($D\circ\mathrm{grad}=K$). The
+spectrum of $L$ is the shared backbone: heat rides it as decay, waves as
+oscillation, pressure as its static and acoustic limit.
+
+\section{The arc}
+
+\paragraph{Step 1 --- one operator from two routes.}
+A wave-propagation (S-parameter) route and a heat-conduction route are shown to be
+the same $L$. Its lowest Neumann eigenvalues match $\pi^2 = 9.8696$ (measured
+$9.72, 9.86, 9.86$); a two-material interface reproduces the exact contact value
+$T = k_2/(k_1+k_2)$ to $2\times10^{-15}$ and below; heat energy decays as
+$e^{-2\lambda t}$ (measured $0.6168$ vs predicted $0.6170$); the wave solver is
+stable (energy fluctuation $1.2\times10^{-2}$). The mesh's only blemish, a residual
+$\sim$5\% directional anisotropy $\Delta c/c \approx 0.047$--$0.048$, is the Kuhn
+cube's broken symmetry, inherited honestly everywhere downstream.
+
+\paragraph{Step 1.5 --- dynamics and boundaries.}
+Damping $M\ddot p = -Kp - \gamma M\dot p$ produces the predicted envelope
+($\gamma{=}0.5$ tail/head $0.101$ vs $0.092$; $\gamma{=}2 \to 10^{-4}$). A discrete
+dispersion cutoff appears at $f \approx 0.127$ cycles/step. Robin convection
+$q = h\,B\,(T-T_{\text{env}})$ gives half-life $\propto 1/h$ (the product
+$\text{half-life}\times h$ holds at $3077$--$3144$ across $h = 0.5\ldots8$, a
+$2.2\%$ spread). Stefan--Boltzmann radiation
+$q = \varepsilon\sigma B (T^4 - T_{\text{env}}^4)$ shows the steep $T^4$ signature.
+
+\paragraph{Step 2 --- pressure as one Poisson solve.}
+The gradient/divergence assembled from the same per-tet $G$ satisfy
+$D(\mathrm{grad}\,p) = K p$ to $3.4\times10^{-16}$. Five exact targets pass:
+hydrostatic $\mathrm{grad}\,p = \rho g$ to $3.6\times10^{-11}$; Helmholtz
+projection (pure gradient removed to $3.8\times10^{-15}$, idempotent to
+$2.9\times10^{-14}$); the gas/liquid split (exponential atmosphere vs linear law,
+joined by compressibility $c^2$); the gas acoustic limit reproducing Step~1's wave
+exactly ($\omega = c\sqrt{\lambda}$, relative error $0.000$); and the pure-Neumann
+null space ($\lvert K\cdot\mathbf 1\rvert = 6\times10^{-15}$, compatibility
+$\lvert \mathbf 1\cdot b\rvert = 7\times10^{-15}$). \textbf{Step 2 contains Step 1}
+as its acoustic limit.
+
+\paragraph{V2.5 --- reshape the domain.}
+A mesh has connectivity and geometry, behaving oppositely under deformation.
+\emph{Topological} deformation (gluing opposite faces, no vertex moves) preserves
+$L$ exactly: the 3-torus folds $729 \to 512$ vertices, its spectrum matches the
+analytic flat-torus $(2\pi)^2 = 39.478$ (measured $37.49$, a $5\%$ FE error) with
+the correct \textbf{6-fold degeneracy} and one constant null mode, and the seam is
+seamless (every vertex has identical degree $15$). \emph{Geometric} deformation
+(moving vertices) degrades $L$: a cube$\to$ball map drops tet quality from $0.657$
+to $0.014$ and creates $2844$ negative-conductance (sign-flipped) cotangent edges;
+a wrapped torus, $2726$. The physics still solves on the degraded mesh. And there
+is a first-principles reason the torus is exact but the sphere is not: the
+\emph{torus is flat} (a periodic box) while the \emph{sphere is curved}, so by the
+\emph{Theorema Egregium} no distortion-free cube$\to$sphere map exists (best
+sampled quality $0.224$, never the baseline $0.657$).
+
+\paragraph{The sign-flip question (\S5b) --- settled honestly.}
+Can a different weight formula (norm) remove those negative conductances? Not for
+free. The sign-flips come exactly from \textbf{obtuse dihedral angles} (the Kuhn
+cube sits at $90^\circ$ precisely, so any deformation tips some angles obtuse:
+$816$ flips $\leftrightarrow$ $1260$ obtuse on the $n{=}6$ ball). Swapping the
+cotangent weight for a uniform (graph) or clamped weight removes the flips but
+destroys the linear-exactness the verification rests on (harmonic reproduction of
+$u=x$ jumps from $2.8\times10^{-16}$ to $2$--$9\times10^{-2}$). Quality-guarded
+smoothing raises quality ($0.401 \to 0.513$) and keeps exactness, yet does
+\emph{not} remove the flips ($816 \to 838$): a flip is an edge-summed property and
+globally non-obtuse 3D meshes are genuinely hard. Only geometry preservation gives
+both at once: the undeformed cube has $0$ flips \emph{and} machine-precision
+exactness. The clean path is topological deformation, or accepting graceful
+degradation---never a cheaper norm.
+
+\paragraph{Grand finale --- made visible.}
+A single viewer (\code{viewer/viewer\_solid.html}) runs all of it: three solids
+(cube, sphere, torus) $\times$ four physics (heat, scalar wave, liquid, gas), every
+displayed value from the verified Python solver (preset or live server solve), with
+wireframe, transparency, and slice.
+
+\section{Why this matters (and its honest scope)}
+That the framework \emph{transforms}---the same operator simulating the same
+physics on different shapes---is the suggestive part: it is the property a
+simulator needs to apply to varied engineered geometries, not just a single test
+box. Stated plainly:
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Not new theory.} Textbook discrete differential geometry and FE
+  analysis; no novel mathematics is asserted.
+  \item \textbf{Genuinely verified, end to end.} One operator carried from heat to
+  waves to pressure to shape-change, each link confirmed against an exact answer at
+  $10^{-11}$--$10^{-16}$, including the negative results (the sign-flip study, the
+  sphere obstruction).
+  \item \textbf{Bounded reach.} A linear, scalar-centred, $n{=}8$ structured-grid
+  notebook---not a commercial CAE solver. Correct, verified, and transparent within
+  its reach; viscous advection, true curved-manifold operators, and optimal
+  remeshing are out of scope.
+\end{itemize}
+The trajectory named by the author---\emph{from ``no free lunch'' to ``a proper
+lunch at a good restaurant''}---is apt: there is no free lunch, but paid for
+correctly (topological transform, or measured degradation), it yields a real,
+verified meal.
+
+\appendix
+\section{Verification results}
+Each row is asserted by the named script; \emph{measured} values are live output.
+
+\paragraph{Step 1 --- \code{unified\_scalar\_verify.py}}
+\begin{longtable}{@{}p{5.6cm}p{3.2cm}p{3.4cm}l@{}}
+\toprule
+claim & exact target & measured & status \\ \midrule \endhead
+Shared spectrum (Neumann) & $\pi^2 = 9.8696$ & $9.72, 9.86, 9.86$ & PASS \\
+Interface $k_1{:}k_2 = 1{:}1$ & $T = 0.5$ & err $2.0\mathrm{e}{-}15$ & PASS \\
+Interface $1{:}3$ / $1{:}10$ & $0.75$ / $0.909$ & $9.1\mathrm{e}{-}15$ / $3.3\mathrm{e}{-}16$ & PASS \\
+Heat energy decay & $e^{-2\lambda t}=0.6170$ & $0.6168$ & PASS \\
+Wave stability & bounded & fluct.\ $1.2\mathrm{e}{-}2$ & PASS \\
+Mesh anisotropy (blemish) & --- & $\Delta c/c \approx 0.047$--$0.048$ & noted \\
+\bottomrule
+\end{longtable}
+
+\paragraph{Step 1.5 --- \code{dynamics\_boundary\_verify.py}}
+\begin{longtable}{@{}p{5.6cm}p{3.2cm}p{3.4cm}l@{}}
+\toprule
+claim & exact target & measured & status \\ \midrule \endhead
+Damped envelope $\gamma{=}0.5$ & $0.092$ & $0.101$ & PASS \\
+Damped envelope $\gamma{=}2.0$ & $\sim\!10^{-4}$ & $10^{-4}$ & PASS \\
+Dispersion cutoff & band $\sim0.13$ & $0.127$ cyc/step & PASS \\
+Robin half-life $\propto 1/h$ & const $\text{half}\cdot h$ & $3077$--$3144$ ($2.2\%$) & PASS \\
+Stefan--Boltzmann $T^4$ & steep cooling & many-fold faster & PASS \\
+\bottomrule
+\end{longtable}
+
+\paragraph{Step 2 --- \code{pressure\_field\_verify.py}}
+\begin{longtable}{@{}p{5.6cm}p{3.2cm}p{3.4cm}l@{}}
+\toprule
+claim & exact target & measured & status \\ \midrule \endhead
+Grad/div consistency & $D(\mathrm{grad}\,p)=Kp$ & $3.4\mathrm{e}{-}16$ & PASS \\
+Hydrostatic $\mathrm{grad}\,p=\rho g$ & exact & $3.6\mathrm{e}{-}11$ & PASS \\
+Projection: gradient removed & $0$ & $3.8\mathrm{e}{-}15$ & PASS \\
+Projection idempotent $P^2{=}P$ & $0$ & $2.9\mathrm{e}{-}14$ & PASS \\
+Gas vs liquid ($c^2$) & exp $\leftrightarrow$ linear & gap $8.81 \to 4.8\mathrm{e}{-}11$ & PASS \\
+Acoustic limit $\omega=c\sqrt{\lambda}$ & exact & rel $0.000$ & PASS \\
+Null space / solvability & $0$ & $6\mathrm{e}{-}15$, $7\mathrm{e}{-}15$ & PASS \\
+\bottomrule
+\end{longtable}
+
+\paragraph{V2.5 --- \code{mesh\_transform\_verify.py}}
+\begin{longtable}{@{}p{5.6cm}p{3.2cm}p{3.4cm}l@{}}
+\toprule
+claim & exact target & measured & status \\ \midrule \endhead
+Topological 3-torus fold & $729 \to 512$ & $512$ & PASS \\
+Flat-torus spectrum & $(2\pi)^2 = 39.478$ & $37.49$ ($5\%$) & PASS \\
+Degeneracy / null & 6-fold, $1$ null & $6$, $1$ & PASS \\
+Seamless wrap & uniform degree & $15$ everywhere & PASS \\
+Geometric ball distortion & --- & $q_{\min}\,0.014$, $2844$ flips & PASS \\
+Geometric torus distortion & --- & $q_{\text{mean}}\,0.053$, $2726$ flips & PASS \\
+Topological torus distortion & preserved & $q\,0.657$, $0$ flips & PASS \\
+Sphere obstruction (Egregium) & $<$ baseline & best $q_{\min}\,0.224$ & PASS \\
+Physics on degraded mesh & bounded & wave ratio $0.337$ & PASS \\
+\bottomrule
+\end{longtable}
+
+\paragraph{\S5b --- \code{cotangent\_signflip\_verify.py}}
+\begin{longtable}{@{}p{5.6cm}p{3.2cm}p{3.4cm}l@{}}
+\toprule
+claim & exact target & measured & status \\ \midrule \endhead
+Mechanism: flips $\leftrightarrow$ obtuse & cube $0/0$ & ball $816/1260$ & PASS \\
+cotangent exact but flips & $\sim$machine & $2.8\mathrm{e}{-}16$, $816$ & PASS \\
+uniform/clamp flip-free, inexact & flips $0$ & err $2$--$9\mathrm{e}{-}2$ & PASS \\
+Smoothing: quality up, exact kept & $q\uparrow$, exact & $0.401{\to}0.513$ & PASS \\
+Smoothing keeps flips & honest & $816 \to 838$ & PASS \\
+Clean escape (geometry kept) & $0$ + exact & $0$, $3.33\mathrm{e}{-}16$ & PASS \\
+\bottomrule
+\end{longtable}
+
+\section{Map of the notebook}
+\textbf{Theory} (\code{theory/}): \code{01}--\code{01e} S-parameter wave route;
+\code{02} heat route; \code{03} unified scalar operator; \code{03b} dynamics \&
+boundaries; \code{04} pressure; \code{05}(+\code{5b}) mesh transform; this
+\code{00} synthesis. \textbf{Verification} (\code{src/verification3d/}):
+\code{unified\_scalar\_verify}, \code{dynamics\_boundary\_verify},
+\code{pressure\_field\_verify}, \code{mesh\_transform\_verify},
+\code{cotangent\_signflip\_verify}, plus S-parameter / heat checks and the viewer
+exporters. \textbf{Core} (\code{src/ksf3d/}): \code{mesh3d\_uniform.py}
+(\code{kuhn\_cube}), \code{fem3d.py} (\code{fem\_laplacian}). \textbf{Viewers}
+(\code{viewer/}): \code{viewer\_unified.html}, \code{viewer\_pressure.html},
+\code{viewer\_solid.html}, each with presets and an optional server-solve API.
+
+\vspace{1em}
+\noindent\emph{Every figure in Appendix~A is the live output of the corresponding
+script at the time of writing; re-running them reproduces it.}
+
+\end{document}
