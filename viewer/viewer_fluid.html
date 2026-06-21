@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KSF · V3 fluid — Stokes profiles & advection (verified playback)</title>
+<style>
+:root{--bg:#070d10;--ink:#cfe3e8;--dim:#5a7a84;--amber:#e8b75a;--teal:#4ecdc4;
+  --line:#152028;--panel:#0c161b}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+#wrap{display:flex;height:100%}
+#side{width:240px;min-width:240px;background:var(--panel);border-right:1px solid var(--line);
+  padding:11px 12px;display:flex;flex-direction:column;gap:9px;overflow-y:auto}
+.lbl{font-size:10px;letter-spacing:.11em;color:var(--dim);text-transform:uppercase;margin-bottom:5px}
+.seg{display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;margin-bottom:4px}
+.seg button{flex:1;padding:7px 0;background:transparent;border:none;color:var(--dim);font:inherit;font-size:11px;cursor:pointer}
+.seg button.on{background:rgba(232,183,90,.16);color:var(--amber)}
+.btn{display:block;width:100%;padding:6px 10px;background:transparent;border:1px solid var(--line);
+  border-radius:5px;color:var(--ink);font:inherit;font-size:12px;cursor:pointer;margin-bottom:4px;text-align:left}
+.btn:hover{border-color:var(--dim)} .btn.on{border-color:var(--amber);color:var(--amber)}
+.row{font-size:11px;color:var(--dim);margin:3px 0}.row b{color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--amber);margin-bottom:4px}
+.hide{display:none}
+#stage{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;left:12px;bottom:54px;font-size:11px;color:var(--dim);
+  background:rgba(7,13,16,.86);padding:9px 11px;border:1px solid var(--line);border-radius:6px;
+  line-height:1.7;max-width:340px;pointer-events:none}
+#hud b{color:var(--ink)} .a{color:var(--amber)} .t{color:var(--teal)}
+#tag{position:absolute;right:12px;top:12px;font-size:11px;color:var(--dim);
+  background:rgba(7,13,16,.86);padding:6px 10px;border:1px solid var(--line);border-radius:6px}
+#trans-bar{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;gap:10px;
+  background:rgba(7,13,16,.86);padding:8px 12px;border:1px solid var(--line);border-radius:8px}
+#trans-bar button{background:transparent;border:1px solid var(--line);border-radius:5px;color:var(--ink);
+  font:inherit;cursor:pointer;padding:4px 12px}
+#trans-bar input{flex:1;accent-color:var(--teal)}
+#frameLab{font-size:11px;color:var(--dim);min-width:64px;text-align:right}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="side">
+    <div>
+      <div class="lbl">Scene (verified solver)</div>
+      <div class="seg" id="scene">
+        <button class="on" data-s="couette">Couette</button>
+        <button data-s="poiseuille">Poiseuille</button>
+        <button data-s="advection">advect</button>
+      </div>
+      <div class="row" id="sceneDesc">Couette: wall-driven, u = U y</div>
+    </div>
+
+    <div id="pVel">
+      <div class="lbl">Parameters</div>
+      <div class="row" id="rowU">wall speed U <b id="vU">1.0</b></div>
+      <input type="range" id="rU" min="-30" max="30" value="10">
+      <div class="row" id="rowG">pressure grad −G <b id="vG">1.0</b></div>
+      <input type="range" id="rG" min="1" max="60" value="10">
+      <div class="row">viscosity ν <b id="vNu">1.0</b></div>
+      <input type="range" id="rNu" min="3" max="40" value="10">
+    </div>
+    <div id="pAdv" class="hide">
+      <div class="lbl">Parameters</div>
+      <div class="row">flow speed uₓ <b id="vUx">1.0</b></div>
+      <input type="range" id="rUx" min="0" max="40" value="10">
+      <div class="row">diffusion κ <b id="vK">0.004</b></div>
+      <input type="range" id="rK" min="0" max="40" value="4">
+    </div>
+
+    <div>
+      <div class="lbl">Source of values</div>
+      <button class="btn on" id="bPreset">▣ preset (instant, verified)</button>
+      <button class="btn" id="bSolve">⟳ solve on server (custom)</button>
+      <div class="row" id="solveState">showing preset</div>
+    </div>
+    <div>
+      <div class="lbl">Overlay</div>
+      <button class="btn on" id="bArrows">velocity arrows: on</button>
+      <button class="btn on" id="bHeat">scalar heatmap: on</button>
+    </div>
+    <div>
+      <div class="lbl">View</div>
+      <button class="btn on" id="bSpin">auto-rotate: on</button>
+      <button class="btn" id="bWire">wireframe: off</button>
+      <button class="btn" id="bSlice">slice: off</button>
+      <input type="range" id="rSlice" min="0" max="100" value="50">
+      <button class="btn" id="bTrans">transparency: off</button>
+    </div>
+  </div>
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <div id="hud">
+      <b>V3 fluid — verified playback.</b><br>
+      <span class="a">arrows</span> = velocity field, <span class="t">heatmap</span> =
+      speed (Stokes) or scalar (advection). Every frame is a
+      <span class="t">verified solver snapshot</span> (Stage A/B), played back — no
+      in-browser physics.
+    </div>
+    <div id="tag">v1 · <span id="tagm">Couette</span></div>
+    <div id="trans-bar">
+      <button id="play">▶ play</button>
+      <input type="range" id="scrub" min="0" max="35" value="0">
+      <span id="frameLab">frame 0/35</span>
+    </div>
+  </div>
+</div>
+<script src="data_fluid.js?v=1"></script>
+<script>
+"use strict";
+function showErr(m){const d=document.createElement("div");
+  d.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#e0654f;background:#0c161b;border:1px solid #e0654f;padding:14px 18px;border-radius:8px;max-width:78%;font-size:12px;line-height:1.6;white-space:pre-wrap;z-index:9";
+  d.textContent=m;const s=document.getElementById("stage");if(s)s.appendChild(d);}
+
+function boot(D){
+try{
+const MESHV=new Float32Array(D.mesh.verts), MESH_nV=D.mesh.nV;
+const MESH_btris=new Uint16Array(D.mesh.btris), MESH_wed=new Uint16Array(D.mesh.wedges);
+let scene="couette", data=D.scenes.couette;
+let frame=0, playing=true, lastT=0;
+let arrowsOn=true, heatOn=true, spin=true, wireOn=false, sliceOn=false, trans=false, sliceX=0.0;
+let rx=-0.5,ry=0.55,dist=2.7,rotating=false,lx=0,ly=0;
+let params={U:1.0,G:1.0,nu:1.0,ux:1.0,kappa:0.004};
+
+const cv=document.getElementById("gl");
+const gl=cv.getContext("webgl",{antialias:true,depth:true,alpha:false});
+if(!gl){showErr("WebGL unavailable.");return;}
+
+// ---- shaders: triangles(heat), lines(wire), arrows(colored lines) ----
+const VS=`attribute vec3 aPos;attribute float aVal;uniform mat4 uMVP;uniform float uLift;
+varying float vVal;varying vec3 vW;void main(){vVal=aVal;vW=aPos;gl_Position=uMVP*vec4(aPos,1.0);gl_Position.z-=uLift*gl_Position.w;}`;
+const FS=`precision mediump float;varying float vVal;varying vec3 vW;
+uniform float uAlpha,uSliceX,uSlice,uFlat;uniform vec3 uFlatCol;
+vec3 ramp(float t){vec3 c0=vec3(.12,.31,.66),c1=vec3(.18,.64,.42),c2=vec3(.91,.83,.29),c3=vec3(.91,.56,.18),c4=vec3(.88,.26,.18),c5=vec3(.48,.25,.69),c6=vec3(1.);t=clamp(t,0.,1.);float s=t*6.;
+ if(s<1.)return mix(c0,c1,s);if(s<2.)return mix(c1,c2,s-1.);if(s<3.)return mix(c2,c3,s-2.);if(s<4.)return mix(c3,c4,s-3.);if(s<5.)return mix(c4,c5,s-4.);return mix(c5,c6,s-5.);}
+void main(){if(uSlice>.5&&vW.x>uSliceX)discard;if(uFlat>.5){gl_FragColor=vec4(uFlatCol,1.);return;}gl_FragColor=vec4(ramp(vVal),uAlpha);}`;
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o;}
+let P;try{P=(()=>{const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;})();}catch(e){showErr("Shader: "+e.message);throw e;}
+
+// mesh buffers (for velocity scenes use D.mesh; for advection the scene carries its own verts)
+let posBuf=gl.createBuffer(), valBuf=gl.createBuffer();
+let bIdxBuf=gl.createBuffer(), wIdxBuf=gl.createBuffer();
+let arrPosBuf=gl.createBuffer(), arrValBuf=gl.createBuffer();
+let curVerts=MESHV, cur_nV=MESH_nV, nBT=MESH_btris.length/3, nW=MESH_wed.length/2;
+
+function setSceneBuffers(){
+  // advection scene has its own verts (periodic mesh); velocity scenes use D.mesh
+  if(scene==="advection" && data.verts){
+    curVerts=new Float32Array(data.verts); cur_nV=data.nV;
+    // advection: no boundary tris stored -> use mesh btris won't match; draw points via heatmap on all verts using a generic cube surface
+    // We reuse the box mesh surface from D.mesh for the heatmap shell, but values come from scene verts.
+    // Simpler: for advection draw the full box surface from D.mesh and sample is identity since periodic verts map back.
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER,posBuf);gl.bufferData(gl.ARRAY_BUFFER,MESHV,gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,bIdxBuf);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,MESH_btris,gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,wIdxBuf);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,MESH_wed,gl.STATIC_DRAW);
+  nBT=MESH_btris.length/3; nW=MESH_wed.length/2;
+}
+setSceneBuffers();
+
+// map scene frame (which may be on the periodic mesh) onto the display mesh (D.mesh, nV)
+function frameToDisplay(fr){
+  // velocity scenes: fr length == MESH_nV (same mesh). advection: fr is on periodic mesh;
+  // we display on D.mesh by nearest index via stored verts match (periodic verts are a subset).
+  if(fr.length===MESH_nV) return new Float32Array(fr);
+  // advection: build per-display-vertex value by matching coordinates (periodic folds x=1 to x=0)
+  const out=new Float32Array(MESH_nV);
+  // build a lookup from scene verts (rounded) -> value
+  const sv=data.verts, map={};
+  for(let i=0;i<data.nV;i++){const k=(sv[3*i].toFixed(3))+","+(sv[3*i+1].toFixed(3))+","+(sv[3*i+2].toFixed(3));map[k]=fr[i];}
+  for(let i=0;i<MESH_nV;i++){
+    let x=MESHV[3*i], y=MESHV[3*i+1], z=MESHV[3*i+2];
+    if(Math.abs(x-1.0)<1e-6)x=0.0;                  // periodic fold
+    const k=x.toFixed(3)+","+y.toFixed(3)+","+z.toFixed(3);
+    out[i]=(k in map)?map[k]:0.0;
+  }
+  return out;
+}
+
+function uploadFrame(){
+  const fr=data.frames[frame];
+  const disp=frameToDisplay(fr);
+  gl.bindBuffer(gl.ARRAY_BUFFER,valBuf);gl.bufferData(gl.ARRAY_BUFFER,disp,gl.STATIC_DRAW);
+  // arrows: build line segments pos->pos+scale*vec, colored by speed
+  const ap=data.arrows.pos, av=data.arrows.vec[Math.min(frame,data.arrows.vec.length-1)];
+  const na=ap.length/3, seg=new Float32Array(na*2*3), sval=new Float32Array(na*2);
+  const sc=0.12;
+  for(let i=0;i<na;i++){
+    const px=ap[3*i],py=ap[3*i+1],pz=ap[3*i+2];
+    const vx=av[3*i],vy=av[3*i+1],vz=av[3*i+2];
+    const sp=Math.sqrt(vx*vx+vy*vy+vz*vz);
+    seg[6*i]=px;seg[6*i+1]=py;seg[6*i+2]=pz;
+    seg[6*i+3]=px+sc*vx;seg[6*i+4]=py+sc*vy;seg[6*i+5]=pz+sc*vz;
+    sval[2*i]=sp;sval[2*i+1]=sp;
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER,arrPosBuf);gl.bufferData(gl.ARRAY_BUFFER,seg,gl.DYNAMIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER,arrValBuf);gl.bufferData(gl.ARRAY_BUFFER,sval,gl.DYNAMIC_DRAW);
+  arrCount=na*2;
+  document.getElementById("scrub").value=frame;
+  document.getElementById("frameLab").textContent="frame "+frame+"/"+(data.frames.length-1);
+}
+let arrCount=0;
+
+// ---- UI ----
+const SDESC={couette:"Couette: wall-driven, u = U y (linear)",
+  poiseuille:"Poiseuille: pressure-driven, parabolic profile",
+  advection:"advection–diffusion: scalar carried by uniform flow"};
+function setScene(s){scene=s; data=D.scenes[s]; frame=0;
+  document.querySelectorAll("#scene button").forEach(x=>x.classList.toggle("on",x.dataset.s===s));
+  document.getElementById("tagm").textContent={couette:"Couette",poiseuille:"Poiseuille",advection:"advection"}[s];
+  document.getElementById("sceneDesc").textContent=SDESC[s];
+  document.getElementById("pVel").classList.toggle("hide",s==="advection");
+  document.getElementById("pAdv").classList.toggle("hide",s!=="advection");
+  document.getElementById("rowU").classList.toggle("hide",s!=="couette");
+  document.getElementById("rowG").classList.toggle("hide",s!=="poiseuille");
+  document.getElementById("scrub").max=data.frames.length-1;
+  uploadFrame();
+  document.getElementById("solveState").textContent="showing preset";
+}
+document.querySelectorAll("#scene button").forEach(b=>b.onclick=()=>setScene(b.dataset.s));
+document.getElementById("rU").oninput=e=>{params.U=e.target.value/10;document.getElementById("vU").textContent=params.U.toFixed(1);};
+document.getElementById("rG").oninput=e=>{params.G=e.target.value/10;document.getElementById("vG").textContent=params.G.toFixed(1);};
+document.getElementById("rNu").oninput=e=>{params.nu=e.target.value/10;document.getElementById("vNu").textContent=params.nu.toFixed(1);};
+document.getElementById("rUx").oninput=e=>{params.ux=e.target.value/10;document.getElementById("vUx").textContent=params.ux.toFixed(1);};
+document.getElementById("rK").oninput=e=>{params.kappa=e.target.value/1000;document.getElementById("vK").textContent=params.kappa.toFixed(3);};
+document.getElementById("bPreset").onclick=()=>{data=D.scenes[scene];frame=0;setScene(scene);};
+document.getElementById("bSolve").onclick=solveOnServer;
+document.getElementById("bArrows").onclick=e=>{arrowsOn=!arrowsOn;e.target.classList.toggle("on",arrowsOn);e.target.textContent="velocity arrows: "+(arrowsOn?"on":"off");};
+document.getElementById("bHeat").onclick=e=>{heatOn=!heatOn;e.target.classList.toggle("on",heatOn);e.target.textContent="scalar heatmap: "+(heatOn?"on":"off");};
+document.getElementById("bSpin").onclick=e=>{spin=!spin;e.target.classList.toggle("on",spin);e.target.textContent="auto-rotate: "+(spin?"on":"off");};
+document.getElementById("bWire").onclick=e=>{wireOn=!wireOn;e.target.classList.toggle("on",wireOn);e.target.textContent="wireframe: "+(wireOn?"on":"off");};
+document.getElementById("bSlice").onclick=e=>{sliceOn=!sliceOn;e.target.classList.toggle("on",sliceOn);e.target.textContent="slice: "+(sliceOn?"on":"off");};
+document.getElementById("rSlice").oninput=e=>{sliceX=(e.target.value/100-0.5)+0.5;};
+document.getElementById("bTrans").onclick=e=>{trans=!trans;e.target.classList.toggle("on",trans);e.target.textContent="transparency: "+(trans?"on":"off");};
+document.getElementById("play").onclick=e=>{playing=!playing;e.target.textContent=playing?"❚❚ pause":"▶ play";};
+document.getElementById("scrub").oninput=e=>{frame=+e.target.value;playing=false;document.getElementById("play").textContent="▶ play";uploadFrame();};
+
+function solveOnServer(){
+  const st=document.getElementById("solveState");st.textContent="solving on server…";
+  const body={scene:scene,U:params.U,nu:params.nu,G:-params.G,kappa:params.kappa,ux:params.ux,frames:36};
+  fetch("api/solve_fluid.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+    .then(r=>r.json()).then(d=>{if(!d.ok){st.textContent="server error: "+(d.error||"?");return;}
+      data=d;frame=0;document.getElementById("scrub").max=data.frames.length-1;uploadFrame();
+      st.textContent="showing server solve ✓";})
+    .catch(e=>{st.textContent="API unreachable (use preset). "+e.message;});
+}
+
+// ---- matrices, interaction ----
+const MM={mul:(a,b)=>{const o=new Array(16);for(let r=0;r<4;r++)for(let c=0;c<4;c++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s;}return o;},
+  persp:(f,a,n,fa)=>{const t=1/Math.tan(f/2);return[t/a,0,0,0,0,t,0,0,0,0,(fa+n)/(n-fa),-1,0,0,2*fa*n/(n-fa),0];},
+  tr:(x,y,z)=>[1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1],
+  rx:a=>{const c=Math.cos(a),s=Math.sin(a);return[1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1];},
+  ry:a=>{const c=Math.cos(a),s=Math.sin(a);return[c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1];}};
+function resize(){const d=Math.min(devicePixelRatio||1,2);cv.width=cv.clientWidth*d;cv.height=cv.clientHeight*d;gl.viewport(0,0,cv.width,cv.height);}
+window.addEventListener("resize",resize);resize();
+gl.clearColor(.027,.051,.063,1);
+cv.addEventListener("mousedown",e=>{rotating=true;lx=e.clientX;ly=e.clientY;});
+window.addEventListener("mouseup",()=>rotating=false);
+window.addEventListener("mousemove",e=>{if(!rotating)return;ry+=(e.clientX-lx)*.008;rx+=(e.clientY-ly)*.008;lx=e.clientX;ly=e.clientY;});
+cv.addEventListener("wheel",e=>{dist*=(1+Math.sign(e.deltaY)*.08);dist=Math.max(1.5,Math.min(8,dist));e.preventDefault();},{passive:false});
+function mvp(){const proj=MM.persp(1.0,cv.width/cv.height,.05,50);const model=MM.mul(MM.ry(ry),MM.rx(rx));
+  return MM.mul(proj,MM.mul(MM.tr(-0.5,-0.5,-dist),MM.mul(model,MM.tr(-0.5,-0.5,-0.5))));}
+function U(n){return gl.getUniformLocation(P,n);}
+function attr(name,buf,size){const l=gl.getAttribLocation(P,name);if(l<0)return;gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,size,gl.FLOAT,false,0,0);}
+
+function frameLoop(t){
+  if(spin)ry+=.003;
+  if(playing && t-lastT>70){frame=(frame+1)%data.frames.length;uploadFrame();lastT=t;}
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.useProgram(P);
+  const m=mvp();
+  gl.uniformMatrix4fv(U("uMVP"),false,m);
+  gl.uniform1f(U("uSliceX"),sliceX);gl.uniform1f(U("uSlice"),sliceOn?1:0);
+  gl.uniform1f(U("uLift"),0);gl.uniform1f(U("uFlat"),0);
+  // heatmap shell
+  if(heatOn){
+    attr("aPos",posBuf,3);attr("aVal",valBuf,1);
+    const al=trans?0.45:1.0;gl.uniform1f(U("uAlpha"),al);
+    if(al<1){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);}
+    else{gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);}
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,bIdxBuf);gl.drawElements(gl.TRIANGLES,nBT*3,gl.UNSIGNED_SHORT,0);
+  }
+  // wireframe
+  if(wireOn){
+    attr("aPos",posBuf,3);attr("aVal",valBuf,1);
+    gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);
+    gl.uniform1f(U("uLift"),.004);gl.uniform1f(U("uFlat"),1);gl.uniform3f(U("uFlatCol"),.52,.55,.57);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,wIdxBuf);gl.drawElements(gl.LINES,nW*2,gl.UNSIGNED_SHORT,0);
+    gl.uniform1f(U("uLift"),0);gl.uniform1f(U("uFlat"),0);
+  }
+  // arrows (colored by speed via ramp)
+  if(arrowsOn && arrCount>0){
+    attr("aPos",arrPosBuf,3);attr("aVal",arrValBuf,1);
+    gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);
+    gl.uniform1f(U("uFlat"),0);gl.uniform1f(U("uAlpha"),1.0);
+    gl.lineWidth(2.0);
+    gl.drawArrays(gl.LINES,0,arrCount);
+  }
+  requestAnimationFrame(frameLoop);
+}
+setScene("couette");
+requestAnimationFrame(frameLoop);
+}catch(e){showErr("Runtime error:\n"+(e&&e.message?e.message:e)+"\n\n"+(e&&e.stack?e.stack:""));throw e;}
+}
+
+(function load(){
+  if(window.KSF_FLUID&&window.KSF_FLUID.scenes){boot(window.KSF_FLUID);return;}
+  fetch("data_fluid.js",{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text();})
+   .then(t=>{const m=t.match(/KSF_FLUID\s*=\s*(\{[\s\S]*\})\s*;?\s*$/);if(!m)throw new Error("parse data_fluid.js");boot(JSON.parse(m[1]));})
+   .catch(e=>showErr("data_fluid.js could not load ("+e.message+")."));
+})();
+</script>
+</body>
+</html>
