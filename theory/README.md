@@ -23,6 +23,7 @@ ones. All work below is on the equally-spaced **Kuhn cube** (`n=8`: 729 vertices
 | 04 | `04_pressure_field.md` | **Step 2**: pressure as one Poisson solve `K p = D f` — hydrostatic (`p=ρgh`), incompressible projection (`∇·u=0`), and gas acoustics (`c²=dp/dρ`, = Step 1 wave) as three regimes; liquid/gas by parameters | `pressure_field_verify.py` | done |
 | 05 | `05_mesh_transform.md` | **V2.5**: reshape cube to torus/sphere. Topological (gluing) preserves `L` exactly (0 sign-flips); geometric (moving vertices) degrades it. Torus=flat=exact (periodic spectrum, 6-fold degeneracy); sphere=curved=forced distortion (Theorema Egregium). §5b: sign-flips ⟺ obtuse dihedrals; norm change removes them but loses linear-exactness (cotangent is load-bearing) | `mesh_transform_verify.py`, `cotangent_signflip_verify.py` | done |
 | 06 | `06_fluid_dynamics.md` | **V3 (theory)**: incompressible Navier–Stokes as the verified Chorin projection of `04` + an advection–diffusion predictor. Three of four terms already verified (`L`, `D∘grad=K`, `P²=P`); only nonlinear advection `C(u)` is new. Staged Stokes→advection→full NS; verified by exact flows (Taylor–Green), MMS, conservation/convergence | planned: `fluid_*_verify.py` | theory only |
+| 06a | `06a_stokes_flow.md` | **V3 Stage A (verified)**: linear Stokes flow — Couette (linear) & Poiseuille (parabolic) to machine precision, steady + transient (decay rate `νπ²`), incompressibility via the verified projection. The plumbing fixed before nonlinearity | `fluid_stokes_verify.py` | done |
 
 ## The one-line result
 
