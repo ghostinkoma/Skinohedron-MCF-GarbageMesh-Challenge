@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KSF · V3 fluid on shapes — cube · torus · sphere (verified playback)</title>
+<style>
+:root{--bg:#070d10;--ink:#cfe3e8;--dim:#5a7a84;--amber:#e8b75a;--teal:#4ecdc4;
+  --coral:#e0654f;--line:#152028;--panel:#0c161b}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+#wrap{display:flex;height:100%}
+#side{width:240px;min-width:240px;background:var(--panel);border-right:1px solid var(--line);
+  padding:11px 12px;display:flex;flex-direction:column;gap:9px;overflow-y:auto}
+.lbl{font-size:10px;letter-spacing:.11em;color:var(--dim);text-transform:uppercase;margin-bottom:5px}
+.seg{display:flex;border:1px solid var(--line);border-radius:5px;overflow:hidden;margin-bottom:4px}
+.seg button{flex:1;padding:7px 0;background:transparent;border:none;color:var(--dim);font:inherit;font-size:11px;cursor:pointer}
+.seg button.on{background:rgba(232,183,90,.16);color:var(--amber)}
+.btn{display:block;width:100%;padding:6px 10px;background:transparent;border:1px solid var(--line);
+  border-radius:5px;color:var(--ink);font:inherit;font-size:12px;cursor:pointer;margin-bottom:4px;text-align:left}
+.btn:hover{border-color:var(--dim)} .btn.on{border-color:var(--amber);color:var(--amber)}
+.row{font-size:11px;color:var(--dim);margin:3px 0}
+#stage{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;left:12px;bottom:54px;font-size:11px;color:var(--dim);
+  background:rgba(7,13,16,.86);padding:9px 11px;border:1px solid var(--line);border-radius:6px;
+  line-height:1.7;max-width:340px;pointer-events:none}
+#hud b{color:var(--ink)} .a{color:var(--amber)} .t{color:var(--teal)}
+#note{position:absolute;left:12px;top:12px;font-size:11px;color:var(--teal);
+  background:rgba(7,13,16,.86);padding:7px 11px;border:1px solid var(--line);border-radius:6px;max-width:360px}
+#note.warn{color:var(--coral);border-color:var(--coral)}
+#tag{position:absolute;right:12px;top:12px;font-size:11px;color:var(--dim);
+  background:rgba(7,13,16,.86);padding:6px 10px;border:1px solid var(--line);border-radius:6px}
+#trans-bar{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;gap:10px;
+  background:rgba(7,13,16,.86);padding:8px 12px;border:1px solid var(--line);border-radius:8px}
+#trans-bar button{background:transparent;border:1px solid var(--line);border-radius:5px;color:var(--ink);font:inherit;cursor:pointer;padding:4px 12px}
+#trans-bar input{flex:1;accent-color:var(--teal)}
+#frameLab{font-size:11px;color:var(--dim);min-width:74px;text-align:right}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="side">
+    <div>
+      <div class="lbl">Solid model</div>
+      <div class="seg" id="shape">
+        <button class="on" data-s="cube">cube</button>
+        <button data-s="torus">torus</button>
+        <button data-s="ball">sphere</button>
+      </div>
+      <div class="row" id="shapeDesc">uniform flow</div>
+    </div>
+    <div>
+      <div class="lbl">Overlay</div>
+      <button class="btn on" id="bArrows">velocity arrows: on</button>
+      <button class="btn on" id="bHeat">scalar heatmap: on</button>
+    </div>
+    <div>
+      <div class="lbl">View</div>
+      <button class="btn on" id="bSpin">auto-rotate: on</button>
+      <button class="btn" id="bWire">wireframe: off</button>
+      <button class="btn" id="bSlice">slice: off</button>
+      <input type="range" id="rSlice" min="0" max="100" value="50">
+      <button class="btn" id="bTrans">transparency: off</button>
+    </div>
+    <div>
+      <div class="lbl">About</div>
+      <div class="row">Every frame is a <b>verified solver</b> snapshot
+      (`fluid_shapes_verify.py`), played back. Each shape uses its natural flow:
+      cube = uniform, torus = around the ring, sphere = solid-body rotation.</div>
+    </div>
+  </div>
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <div id="note">—</div>
+    <div id="hud">
+      <b>V3 fluid transforms across shapes.</b><br>
+      <span class="a">arrows</span> = velocity, <span class="t">heatmap</span> = scalar
+      carried by the flow. Incompressibility &amp; mass conservation hold to machine
+      precision on <span class="t">all three shapes</span>; accuracy tracks mesh quality.
+    </div>
+    <div id="tag">v1 · <span id="tagm">cube</span></div>
+    <div id="trans-bar">
+      <button id="play">❚❚ pause</button>
+      <input type="range" id="scrub" min="0" max="29" value="0">
+      <span id="frameLab">frame 0/29</span>
+    </div>
+  </div>
+</div>
+<script src="data_fluid_shapes.js?v=1"></script>
+<script>
+"use strict";
+function showErr(m){const d=document.createElement("div");
+  d.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#e0654f;background:#0c161b;border:1px solid #e0654f;padding:14px 18px;border-radius:8px;max-width:78%;font-size:12px;white-space:pre-wrap;z-index:9";
+  d.textContent=m;const s=document.getElementById("stage");if(s)s.appendChild(d);}
+
+function boot(D){
+try{
+let shape="cube", S=D.shapes.cube;
+let frame=0, playing=true, lastT=0;
+let arrowsOn=true, heatOn=true, spin=true, wireOn=false, sliceOn=false, trans=false, sliceX=0.0;
+let rx=-0.5, ry=0.55, dist=3.0, rotating=false, lx=0, ly=0;
+
+const cv=document.getElementById("gl");
+const gl=cv.getContext("webgl",{antialias:true,depth:true,alpha:false});
+if(!gl){showErr("WebGL unavailable.");return;}
+
+const VS=`attribute vec3 aPos;attribute float aVal;uniform mat4 uMVP;uniform float uLift;
+varying float vVal;varying vec3 vW;void main(){vVal=aVal;vW=aPos;gl_Position=uMVP*vec4(aPos,1.0);gl_Position.z-=uLift*gl_Position.w;}`;
+const FS=`precision mediump float;varying float vVal;varying vec3 vW;
+uniform float uAlpha,uSliceX,uSlice,uFlat;uniform vec3 uFlatCol;
+vec3 ramp(float t){vec3 c0=vec3(.12,.31,.66),c1=vec3(.18,.64,.42),c2=vec3(.91,.83,.29),c3=vec3(.91,.56,.18),c4=vec3(.88,.26,.18),c5=vec3(.48,.25,.69),c6=vec3(1.);t=clamp(t,0.,1.);float s=t*6.;
+ if(s<1.)return mix(c0,c1,s);if(s<2.)return mix(c1,c2,s-1.);if(s<3.)return mix(c2,c3,s-2.);if(s<4.)return mix(c3,c4,s-3.);if(s<5.)return mix(c4,c5,s-4.);return mix(c5,c6,s-5.);}
+void main(){if(uSlice>.5&&vW.x>uSliceX)discard;if(uFlat>.5){gl_FragColor=vec4(uFlatCol,1.);return;}gl_FragColor=vec4(ramp(vVal),uAlpha);}`;
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o;}
+let P;try{P=(()=>{const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;})();}catch(e){showErr("Shader: "+e.message);throw e;}
+
+const posBuf=gl.createBuffer(), valBuf=gl.createBuffer(), bIdx=gl.createBuffer(), wIdx=gl.createBuffer();
+const arrPos=gl.createBuffer(), arrVal=gl.createBuffer();
+let nBT=0, nW=0, arrCount=0, curVerts=null;
+
+function loadShapeBuffers(){
+  curVerts=new Float32Array(S.verts);
+  gl.bindBuffer(gl.ARRAY_BUFFER,posBuf);gl.bufferData(gl.ARRAY_BUFFER,curVerts,gl.STATIC_DRAW);
+  const bt=new Uint16Array(S.btris), we=new Uint16Array(S.wedges);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,bIdx);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,bt,gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,wIdx);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,we,gl.STATIC_DRAW);
+  nBT=bt.length/3; nW=we.length/2;
+}
+
+function uploadFrame(){
+  const fr=S.frames[frame];
+  gl.bindBuffer(gl.ARRAY_BUFFER,valBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(fr),gl.STATIC_DRAW);
+  // arrows: pos fixed, vec is one steady set (rotation/uniform/ring)
+  const ap=S.arrows.pos, av=S.arrows.vec, na=ap.length/3;
+  const seg=new Float32Array(na*2*3), sval=new Float32Array(na*2), sc=0.16;
+  for(let i=0;i<na;i++){
+    const px=ap[3*i],py=ap[3*i+1],pz=ap[3*i+2];
+    const vx=av[3*i],vy=av[3*i+1],vz=av[3*i+2];
+    const sp=Math.sqrt(vx*vx+vy*vy+vz*vz);
+    seg[6*i]=px;seg[6*i+1]=py;seg[6*i+2]=pz;
+    seg[6*i+3]=px+sc*vx;seg[6*i+4]=py+sc*vy;seg[6*i+5]=pz+sc*vz;
+    sval[2*i]=sp;sval[2*i+1]=sp;
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER,arrPos);gl.bufferData(gl.ARRAY_BUFFER,seg,gl.DYNAMIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER,arrVal);gl.bufferData(gl.ARRAY_BUFFER,sval,gl.DYNAMIC_DRAW);
+  arrCount=na*2;
+  document.getElementById("scrub").value=frame;
+  document.getElementById("frameLab").textContent="frame "+frame+"/"+(S.frames.length-1);
+}
+
+const SDESC={cube:"uniform flow (x-periodic)",torus:"flow around the ring",ball:"solid-body rotation"};
+function setShape(s){shape=s; S=D.shapes[s]; frame=0;
+  document.querySelectorAll("#shape button").forEach(x=>x.classList.toggle("on",x.dataset.s===s));
+  document.getElementById("tagm").textContent={cube:"cube",torus:"torus",ball:"sphere"}[s];
+  document.getElementById("shapeDesc").textContent=SDESC[s];
+  const note=document.getElementById("note"); note.textContent=S.note||"—";
+  note.classList.toggle("warn", (S.note||"").indexOf("DEGRADED")>=0);
+  dist = s==="torus"?3.6:(s==="ball"?2.6:3.0);
+  document.getElementById("scrub").max=S.frames.length-1;
+  loadShapeBuffers(); uploadFrame();
+}
+document.querySelectorAll("#shape button").forEach(b=>b.onclick=()=>setShape(b.dataset.s));
+document.getElementById("bArrows").onclick=e=>{arrowsOn=!arrowsOn;e.target.classList.toggle("on",arrowsOn);e.target.textContent="velocity arrows: "+(arrowsOn?"on":"off");};
+document.getElementById("bHeat").onclick=e=>{heatOn=!heatOn;e.target.classList.toggle("on",heatOn);e.target.textContent="scalar heatmap: "+(heatOn?"on":"off");};
+document.getElementById("bSpin").onclick=e=>{spin=!spin;e.target.classList.toggle("on",spin);e.target.textContent="auto-rotate: "+(spin?"on":"off");};
+document.getElementById("bWire").onclick=e=>{wireOn=!wireOn;e.target.classList.toggle("on",wireOn);e.target.textContent="wireframe: "+(wireOn?"on":"off");};
+document.getElementById("bSlice").onclick=e=>{sliceOn=!sliceOn;e.target.classList.toggle("on",sliceOn);e.target.textContent="slice: "+(sliceOn?"on":"off");};
+document.getElementById("rSlice").oninput=e=>{sliceX=(e.target.value/100-0.5)*2.2;};
+document.getElementById("bTrans").onclick=e=>{trans=!trans;e.target.classList.toggle("on",trans);e.target.textContent="transparency: "+(trans?"on":"off");};
+document.getElementById("play").onclick=e=>{playing=!playing;e.target.textContent=playing?"❚❚ pause":"▶ play";};
+document.getElementById("scrub").oninput=e=>{frame=+e.target.value;playing=false;document.getElementById("play").textContent="▶ play";uploadFrame();};
+
+const MM={mul:(a,b)=>{const o=new Array(16);for(let r=0;r<4;r++)for(let c=0;c<4;c++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s;}return o;},
+  persp:(f,a,n,fa)=>{const t=1/Math.tan(f/2);return[t/a,0,0,0,0,t,0,0,0,0,(fa+n)/(n-fa),-1,0,0,2*fa*n/(n-fa),0];},
+  tr:(x,y,z)=>[1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1],
+  rx:a=>{const c=Math.cos(a),s=Math.sin(a);return[1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1];},
+  ry:a=>{const c=Math.cos(a),s=Math.sin(a);return[c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1];}};
+function resize(){const d=Math.min(devicePixelRatio||1,2);cv.width=cv.clientWidth*d;cv.height=cv.clientHeight*d;gl.viewport(0,0,cv.width,cv.height);}
+window.addEventListener("resize",resize);resize();
+gl.clearColor(.027,.051,.063,1);
+cv.addEventListener("mousedown",e=>{rotating=true;lx=e.clientX;ly=e.clientY;});
+window.addEventListener("mouseup",()=>rotating=false);
+window.addEventListener("mousemove",e=>{if(!rotating)return;ry+=(e.clientX-lx)*.008;rx+=(e.clientY-ly)*.008;lx=e.clientX;ly=e.clientY;});
+cv.addEventListener("wheel",e=>{dist*=(1+Math.sign(e.deltaY)*.08);dist=Math.max(1.5,Math.min(9,dist));e.preventDefault();},{passive:false});
+function mvp(){const proj=MM.persp(1.0,cv.width/cv.height,.05,60);const model=MM.mul(MM.ry(ry),MM.rx(rx));return MM.mul(proj,MM.mul(MM.tr(0,0,-dist),model));}
+function U(n){return gl.getUniformLocation(P,n);}
+function attr(name,buf,size){const l=gl.getAttribLocation(P,name);if(l<0)return;gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,size,gl.FLOAT,false,0,0);}
+
+function loop(t){
+  if(spin)ry+=.003;
+  if(playing && t-lastT>80){frame=(frame+1)%S.frames.length;uploadFrame();lastT=t;}
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.useProgram(P);
+  gl.uniformMatrix4fv(U("uMVP"),false,mvp());
+  gl.uniform1f(U("uSliceX"),sliceX);gl.uniform1f(U("uSlice"),sliceOn?1:0);
+  gl.uniform1f(U("uLift"),0);gl.uniform1f(U("uFlat"),0);
+  if(heatOn){
+    attr("aPos",posBuf,3);attr("aVal",valBuf,1);
+    const al=trans?0.45:1.0;gl.uniform1f(U("uAlpha"),al);
+    if(al<1){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);}
+    else{gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);}
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,bIdx);gl.drawElements(gl.TRIANGLES,nBT*3,gl.UNSIGNED_SHORT,0);
+  }
+  if(wireOn){
+    attr("aPos",posBuf,3);attr("aVal",valBuf,1);
+    gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);
+    gl.uniform1f(U("uLift"),.004);gl.uniform1f(U("uFlat"),1);gl.uniform3f(U("uFlatCol"),.52,.55,.57);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,wIdx);gl.drawElements(gl.LINES,nW*2,gl.UNSIGNED_SHORT,0);
+    gl.uniform1f(U("uLift"),0);gl.uniform1f(U("uFlat"),0);
+  }
+  if(arrowsOn && arrCount>0){
+    attr("aPos",arrPos,3);attr("aVal",arrVal,1);
+    gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);
+    gl.uniform1f(U("uFlat"),0);gl.uniform1f(U("uAlpha"),1.0);gl.lineWidth(2.0);
+    gl.drawArrays(gl.LINES,0,arrCount);
+  }
+  requestAnimationFrame(loop);
+}
+setShape("cube");
+requestAnimationFrame(loop);
+}catch(e){showErr("Runtime error:\n"+(e&&e.message?e.message:e)+"\n\n"+(e&&e.stack?e.stack:""));throw e;}
+}
+
+(function load(){
+  if(window.KSF_FLUID_SHAPES&&window.KSF_FLUID_SHAPES.shapes){boot(window.KSF_FLUID_SHAPES);return;}
+  fetch("data_fluid_shapes.js",{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text();})
+   .then(t=>{const m=t.match(/KSF_FLUID_SHAPES\s*=\s*(\{[\s\S]*\})\s*;?\s*$/);if(!m)throw new Error("parse data_fluid_shapes.js");boot(JSON.parse(m[1]));})
+   .catch(e=>showErr("data_fluid_shapes.js could not load ("+e.message+")."));
+})();
+</script>
+</body>
+</html>
