@@ -7,14 +7,17 @@ operator (`06b`) — now with the velocity advecting **itself**, `C(u)u`. This i
 first genuinely **nonlinear** stage, so the yardstick is the nonlinear-CFD suite
 (exact flows, manufactured/conservation/convergence) rather than a single `10⁻¹⁵`.
 
-**Headline finding.** The apparent classical limitation — *"equal-order P1/P1 is not
-inf–sup stable, so the projection cannot make the velocity divergence-free to machine
-precision"* — is **cancelled** here by a careful, consistent accumulation: building
-the discrete divergence `B` and its **exact transpose `Bᵀ`** from the *same* per-tet
-gradient `G`. The velocity is then divergence-free to machine precision (`‖Bu‖ ~
-10⁻¹⁶`), **maintained through the nonlinear evolution and at every resolution**.
-What inf–sup genuinely costs is confined to the **pressure** field, stated openly
-below. Built on `06a`/`06b`/`04`.
+**Headline finding (carefully stated).** `‖Bu‖ ~ 10⁻¹⁶` by itself is an *algebraic
+triviality*: any projector `P = I − M⁻¹Bᵀ(BM⁻¹Bᵀ)⁻¹B` satisfies `BP = 0` by
+construction, so machine-precision discrete divergence proves nothing on its own —
+**this is not the claim**, and the earlier framing ("cancels the classical
+constraint") over-stated it. The real, tested claims are two: (i) with a *consistent*
+`(B,Bᵀ)` pair from the one per-tet `G`, the velocity stays divergence-free without an
+inconsistency residual (the earlier `3.8e-4` was a non-transpose bug, not inf–sup);
+and (ii) **the equal-order P1 pressure is genuinely checkerboard-unstable, but that
+instability is confined to the pressure and does *not* leak into the velocity** —
+shown directly (not asserted) by PSPG-invariance: stabilising the pressure
+(correlation `0.0→0.94`) moves the velocity by only `~10⁻⁴`. Built on `06a`/`06b`/`04`.
 
 ---
 
@@ -98,11 +101,19 @@ basis of stability. `C(uⁿ)` is reassembled each step.
 - **D. Convergence.** Decay-rate error `n=8: 4.9% → n=10: 3.1% → n=12: 2.2%`,
   falling with refinement; `‖Bu‖` machine (`≤4e-16`) at every `n`.
 
-- **E. Pressure honesty (the inf–sup residual).** The projection pressure correlates
-  only `0.24` with the exact Taylor–Green pressure: equal-order P1 admits spurious
-  pressure modes (in the near-null space of `Bᵀ`) that **do not pollute the
-  velocity**. So the velocity is divergence-free and energy-correct, but the
-  **pressure** is not faithful. This is where inf–sup actually lives.
+- **E. Pressure honesty + velocity-quality (the inf–sup investigation).** Backed by
+  `fluid_ns_velocity_quality_verify.py`. Three measured facts:
+  1. *Pressure is genuinely bad.* The unstabilised projection pressure correlates
+     only `0.0–0.2` with the exact Taylor–Green pressure — classic checkerboard.
+  2. *Velocity is genuinely clean.* High-frequency velocity energy (FFT, above ⅓
+     Nyquist) is `~10⁻⁹` for Taylor–Green and `~10⁻⁴` for an *asymmetric* multi-mode
+     flow, **decreasing under refinement** (`9e-4→4e-4→1e-5` for n=8,10,12) — a
+     convergent discretisation effect, not a blow-up.
+  3. *The decisive test — PSPG-invariance.* Stabilising the pressure raises its
+     correlation `0.0→0.94` while changing the velocity by only `~10⁻⁴`. So the
+     checkerboard lives in the pressure and does **not** contaminate the velocity:
+     the velocity is pressure-decoupled. (The `~10⁻⁴` asymmetric high-freq content is
+     therefore physical cascade, since it is PSPG-invariant.)
 
 ---
 
@@ -111,33 +122,41 @@ basis of stability. `C(uⁿ)` is reassembled each step.
 **Verified (Stage C):**
 - Full incompressible Navier–Stokes is the self-advecting Chorin projection on the
   verified operators; only `C(u)u` is new.
-- With the consistent `(B,Bᵀ)` projection, the **velocity is divergence-free to
-  machine precision** through the nonlinear flow and at every resolution; Taylor–Green
-  decay `4νk²` is reproduced to FE accuracy (3.1%, convergent); inviscid energy is
-  conserved (0.000% drift).
-- The apparent inf–sup obstruction to machine-precision incompressibility is an
-  artefact of inconsistent operators; a consistent transpose pair removes it.
+- The consistent `(B,Bᵀ)` projection keeps the velocity divergence-free without the
+  earlier inconsistency residual; Taylor–Green decay `4νk²` is reproduced to FE
+  accuracy (3.1%, convergent); inviscid energy is conserved (0.000% drift).
+- **The velocity is pressure-decoupled**: PSPG stabilisation fixes the pressure
+  (correlation `0.0→0.94`) while moving the velocity by only `~10⁻⁴`, so the
+  checkerboard does not leak into the velocity (shown, not asserted).
 
-**Not claimed:**
-- **The pressure is faithful.** Equal-order P1/P1 admits spurious pressure modes
-  (correlation `~0.24` with exact); inf–sup's genuine cost is here, in the pressure,
-  not in the velocity divergence. A faithful pressure needs a compatible/stabilised
-  pair or a pressure-recovery post-process — a separate, later option. The
-  **velocity** is the trustworthy output.
-- **No new mathematics.** Chorin projection, skew convection, the algebraic
-  `ker B` projector, Taylor–Green are classical; the contribution is the verified,
-  self-consistent realisation on this project's one `G` — and the explicit
-  demonstration that consistency, not stabilisation, buys machine-precision
-  incompressibility here.
+**Not claimed / conceded:**
+- **`‖Bu‖~10⁻¹⁶` is not, by itself, a result.** It is an algebraic property of any
+  projection; the earlier "cancels the classical constraint" framing over-stated it
+  and is retracted. The substantive content is the *velocity quality* (above), not
+  the divergence norm.
+- **The unstabilised pressure is not trustworthy.** Equal-order P1/P1 is inf–sup
+  (LBB) unstable; the pressure is checkerboard (correlation `~0.0–0.2`). A usable
+  pressure needs PSPG/compatible elements — available, but the baseline pressure
+  should be treated as unreliable. So "we solve correct incompressible NS" holds for
+  the **velocity**, not yet for the pressure.
+- **Battery is incomplete.** Tested on periodic Taylor–Green and an asymmetric
+  multi-mode flow only. **Untested** (and required before any broad claim):
+  wall-bounded lid-driven cavity, flow past a cylinder, transition to turbulence,
+  and long-time enstrophy behaviour. Periodic smooth flows can flatter a scheme.
+- **No new mathematics.** Chorin projection, the algebraic `ker B` projector, PSPG,
+  Taylor–Green are classical; the contribution is the self-consistent realisation on
+  this project's one `G`, with the pressure/velocity split measured honestly.
 - **Bounded reach:** incompressible, Newtonian, *moderate* Reynolds number on the
-  `n=8`–`12` structured cube. High-Re turbulence (needs upwind/SUPG), compressibility,
-  free surfaces, and faithful pressure are out of scope.
+  `n=8`–`12` structured cube; high-Re turbulence, compressibility, free surfaces, and
+  a faithful pressure are out of scope.
 
 ---
 
 ## 5. Files
 
 - Theory: this document, on `06`/`06a`/`06b`/`04`.
-- **Verification:** `src/verification3d/fluid_navier_stokes_verify.py` (checks A–E).
+- **Verification:** `src/verification3d/fluid_navier_stokes_verify.py` (checks A–E)
+  and `src/verification3d/fluid_ns_velocity_quality_verify.py` (high-freq + PSPG-invariance,
+  answering the inf–sup critique).
 - Next (optional): a Navier–Stokes viewer (vortex decay) reusing the fluid-viewer
   rendering; a pressure-recovery study; the V3 synthesis update.
