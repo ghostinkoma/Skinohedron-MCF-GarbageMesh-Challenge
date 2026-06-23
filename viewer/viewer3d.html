@@ -27,6 +27,16 @@ button.on{border-color:#e8b75a;color:#e8b75a}
 button:active{transform:translateY(1px)}
 .legend{position:absolute;right:14px;bottom:14px;font-size:11px;color:#7fa0a8;text-align:right;line-height:1.8}
 .sw{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-left:6px}
+
+/* === unified responsive (narrow screens) === */
+@media (max-width: 760px){
+  html,body{height:auto;min-height:100%}
+  #wrap{flex-direction:column;height:auto;min-height:100vh}
+  #side,#sidebar{width:100%!important;min-width:0!important;max-width:none!important;
+    border-right:none;border-bottom:1px solid var(--line);max-height:46vh;overflow:auto}
+  #stage{height:62vh;min-height:340px}
+  canvas{width:100%!important;height:100%!important}
+}
 </style>
 </head>
 <body>

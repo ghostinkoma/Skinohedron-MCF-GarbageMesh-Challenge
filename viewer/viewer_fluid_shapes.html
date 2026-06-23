@@ -37,6 +37,16 @@ canvas{display:block;width:100%;height:100%}
 #trans-bar button{background:transparent;border:1px solid var(--line);border-radius:5px;color:var(--ink);font:inherit;cursor:pointer;padding:4px 12px}
 #trans-bar input{flex:1;accent-color:var(--teal)}
 #frameLab{font-size:11px;color:var(--dim);min-width:74px;text-align:right}
+
+/* === unified responsive (narrow screens) === */
+@media (max-width: 760px){
+  html,body{height:auto;min-height:100%}
+  #wrap{flex-direction:column;height:auto;min-height:100vh}
+  #side,#sidebar{width:100%!important;min-width:0!important;max-width:none!important;
+    border-right:none;border-bottom:1px solid var(--line);max-height:46vh;overflow:auto}
+  #stage{height:62vh;min-height:340px}
+  canvas{width:100%!important;height:100%!important}
+}
 </style>
 </head>
 <body>
