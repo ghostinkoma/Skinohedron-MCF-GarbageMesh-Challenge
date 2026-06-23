@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>KSF V3 \u2014 \u6570\u7406\u30E2\u30C7\u30EB\u30D3\u30E5\u30FC\u30A2 (Model Map)</title>
+<title>KSF V3 — 数理モデルビューア (Model Map)</title>
 <style>
   :root{
     --bg:#0b0f14; --panel:#121821; --panel2:#0e141c; --ink:#e7eef6; --mut:#8aa0b4;
@@ -57,24 +57,24 @@
 </head>
 <body>
 <header>
-  <h1>KSF V3 \u2014 \u6570\u7406\u30E2\u30C7\u30EB\u30D3\u30E5\u30FC\u30A2</h1>
-  <div class="sub">\u4E00\u3064\u306E\u4F5C\u7528\u7D20 <span class="mono">L = M\u207B\u00B9K</span> \u3068\u56DB\u3064\u306E\u30C9\u30E1\u30A4\u30F3\u3002\u8868\u793A\u3055\u308C\u308B\u6570\u5024\u306F\u3059\u3079\u3066\u691C\u8A3C\u30B9\u30AF\u30EA\u30D7\u30C8\u306E\u51FA\u529B\uFF08\u30D6\u30E9\u30A6\u30B6\u5185\u8A08\u7B97\u306A\u3057\uFF09\u3002</div>
+  <h1>KSF V3 — 数理モデルビューア</h1>
+  <div class="sub">一つの作用素 <span class="mono">L = M⁻¹K</span> と四つのドメイン。表示される数値はすべて検証スクリプトの出力（ブラウザ内計算なし）。</div>
 </header>
 <div class="wrap">
   <div class="left">
     <svg id="map" viewBox="0 0 560 520" aria-label="domain map"></svg>
-    <div class="hint">\u30CE\u30FC\u30C9\u3092\u30AF\u30EA\u30C3\u30AF\u3057\u3066\u8A73\u7D30\u3068\u691C\u8A3C\u6570\u5024\u3092\u8868\u793A \u00B7 \u8272\u306F\u7CBE\u5EA6\uFF08\u7DD1=\u6A5F\u68B0\u7CBE\u5EA6 / \u6A59=O(h\u00B2)\uFF09</div>
+    <div class="hint">ノードをクリックして詳細と検証数値を表示 · 色は精度（緑=機械精度 / 橙=O(h²)）</div>
     <div class="card" style="margin-top:14px">
-      <h2>\u4F5C\u7528\u7D20\u306E\u8AAD\u307F\u66FF\u3048 (operator readings)</h2>
+      <h2>作用素の読み替え (operator readings)</h2>
       <div id="readings"></div>
     </div>
   </div>
   <div class="right">
     <div class="tabs">
-      <div class="tab active" data-t="detail">\u30C9\u30E1\u30A4\u30F3\u8A73\u7D30</div>
-      <div class="tab" data-t="rule">\u6A5F\u68B0\u7CBE\u5EA6\u306E\u898F\u5247</div>
-      <div class="tab" data-t="enrich">\u9AD8\u6B21\u5316\u2192\u6A5F\u68B0\u7CBE\u5EA6</div>
-      <div class="tab" data-t="scope">\u6B63\u76F4\u306A\u7BC4\u56F2</div>
+      <div class="tab active" data-t="detail">ドメイン詳細</div>
+      <div class="tab" data-t="rule">機械精度の規則</div>
+      <div class="tab" data-t="enrich">高次化→機械精度</div>
+      <div class="tab" data-t="scope">正直な範囲</div>
     </div>
     <div id="pane"></div>
   </div>
@@ -88,8 +88,8 @@ function el(tag,attrs={},txt){const e=document.createElementNS(NS,tag);for(const
 // ---- domain map ----
 const map=$("#map");
 const cx=280,cy=250,R=165;
-const colorByPrec=p=> p==="exact"?"var(--exact)": p==="O(h\u00B2)"?"var(--oh2)": p&&p.indexOf("div-free")>=0?"var(--blue)":"var(--violet)";
-const pillClass=d=> d.precision==="exact"?"exact": d.precision==="O(h\u00B2)"?"oh2": d.id==="velocity"?"vel":"fuse";
+const colorByPrec=p=> p==="exact"?"var(--exact)": p==="O(h²)"?"var(--oh2)": p&&p.indexOf("div-free")>=0?"var(--blue)":"var(--violet)";
+const pillClass=d=> d.precision==="exact"?"exact": d.precision==="O(h²)"?"oh2": d.id==="velocity"?"vel":"fuse";
 
 const angles = MODEL.domains.map((_,i)=> (-Math.PI/2) + i*(2*Math.PI/MODEL.domains.length));
 MODEL.domains.forEach((d,i)=>{
@@ -99,7 +99,7 @@ MODEL.domains.forEach((d,i)=>{
 // center
 const cg=el("g",{class:"center"});
 cg.appendChild(el("circle",{cx,cy,r:46,fill:"#0e141c",stroke:"#33455a","stroke-width":1.5}));
-cg.appendChild(el("text",{x:cx,y:cy-2,"text-anchor":"middle","font-size":16,"font-weight":700,"font-family":"ui-monospace,monospace"},"L = M\u207B\u00B9K"));
+cg.appendChild(el("text",{x:cx,y:cy-2,"text-anchor":"middle","font-size":16,"font-weight":700,"font-family":"ui-monospace,monospace"},"L = M⁻¹K"));
 cg.appendChild(el("text",{x:cx,y:cy+16,"text-anchor":"middle","font-size":10,fill:"var(--mut)"},"one operator"));
 map.appendChild(cg);
 // nodes
@@ -110,7 +110,7 @@ MODEL.domains.forEach((d,i)=>{
   g.appendChild(el("rect",{x:ax-w/2,y:ay-h/2,rx:11,width:w,height:h,fill:"#121821",stroke:d.color,"stroke-width":1.6}));
   g.appendChild(el("circle",{cx:ax-w/2+14,cy:ay-h/2+14,r:5,fill:d.color}));
   g.appendChild(el("text",{class:"nlabel",x:ax-w/2+26,y:ay-h/2+18},d.label));
-  g.appendChild(el("text",{class:"nrole",x:ax-w/2+14,y:ay-h/2+34},d.role.length>26?d.role.slice(0,25)+"\u2026":d.role));
+  g.appendChild(el("text",{class:"nrole",x:ax-w/2+14,y:ay-h/2+34},d.role.length>26?d.role.slice(0,25)+"…":d.role));
   g.appendChild(el("text",{class:"badge",x:ax-w/2+14,y:ay-h/2+47,fill:d.color},d.precision));
   g.addEventListener("click",()=>{showDetail(d); setTab("detail");});
   map.appendChild(g);
@@ -135,8 +135,8 @@ function showDetail(d){
       <div class="src">script: <span class="mono">${d.script}</span> &middot; doc: ${d.doc}</div>
     </div>
     <div class="card">
-      <h2>\u3053\u306E\u30C9\u30E1\u30A4\u30F3\u306E\u4F4D\u7F6E</h2>
-      <div class="fact">\u8CEA\u91CF=\u53B3\u5BC6 / \u30AF\u30FC\u30ED\u30F3=O(h\u00B2)\uFF08\u9AD8\u6B21\u5316\u3067\u6A5F\u68B0\u7CBE\u5EA6\uFF09 / \u6E29\u5EA6=\u878D\u5408\u3068\u5A92\u4ECB / \u901F\u5EA6=\u975E\u5727\u7E2E\u6A5F\u68B0\u7CBE\u5EA6\u30FB\u5727\u529B\u5206\u96E2\u3002</div>
+      <h2>このドメインの位置</h2>
+      <div class="fact">質量=厳密 / クーロン=O(h²)（高次化で機械精度） / 温度=融合と媒介 / 速度=非圧縮機械精度・圧力分離。</div>
     </div>`;
 }
 function showRule(){
@@ -145,8 +145,8 @@ function showRule(){
     return `<div class="rulerow"><div class="dot" style="background:${c}"></div>
       <div><b>${r.kind}</b><br><span class="hint">${r.ex} &middot; <span class="mono">${r.val}</span></span></div></div>`;
   }).join("");
-  pane.innerHTML=`<div class="card"><h2>\u6A5F\u68B0\u7CBE\u5EA6\u306E\u898F\u5247 (audit-corrected)</h2>${rows}
-    <div class="hint" style="margin-top:8px">\u91CD\u8981\uFF1A\u653E\u7269\u7DDA\uFF08Poiseuille\uFF09\u306FP1\u306B\u5165\u3089\u306A\u3044that\u3001\u5B9A\u6570\u30BD\u30FC\u30B9\u306E\u7BC0\u70B9\u8D85\u53CE\u675F\u3067\u6A5F\u68B0\u7CBE\u5EA6\u3002\u300CP1\u306B\u5165\u308B\u304B\u3089\u300D\u3067\u306F\u306A\u3044\u3002</div></div>`;
+  pane.innerHTML=`<div class="card"><h2>機械精度の規則 (audit-corrected)</h2>${rows}
+    <div class="hint" style="margin-top:8px">重要：放物線（Poiseuille）はP1に入らないthat、定数ソースの節点超収束で機械精度。「P1に入るから」ではない。</div></div>`;
 }
 function showEnrich(){
   const max=Math.log10(MODEL.enrichment[0].err), min=Math.log10(MODEL.enrichment[MODEL.enrichment.length-1].err);
@@ -155,17 +155,17 @@ function showEnrich(){
     return `<tr><td class="mono">${e.order}</td><td class="mono">${e.err.toExponential(2)}</td>
       <td style="width:55%"><div class="bar" style="width:${w}%"></div></td></tr>`;
   }).join("");
-  pane.innerHTML=`<div class="card"><h2>\u5C40\u6240\u9AD8\u6B21\u5316\u3067\u5264\u6027\u8AA4\u5DEE\u2192\u6A5F\u68B0\u7CBE\u5EA6 (1-D, \u691C\u8A3C\u6E08)</h2>
-    <table><tr><th>\u6B21\u6570</th><th>\u56FA\u6709\u5024\u8AA4\u5DEE</th><th>\u30D0\u30FC(log)</th></tr>${rows}</table>
-    <div class="hint" style="margin-top:8px">\u300C\u6B21\u5143\u62E1\u5F35\u2192\u5C04\u5F71\u300D\u306E\u691C\u8A3C\u53EF\u80FD\u306A\u5F62\uFF1Asin\u306FP1\u306B\u5165\u3089\u306A\u3044that\u3001\u5341\u5206\u8C4A\u304B\u306A\u5C40\u6240\u7A7A\u9593\uFF08P8\uFF09\u3067\u6A5F\u68B0\u7CBE\u5EA6\u3002K\u3092\u8C4A\u304B\u306B\u3001M\u306F\u305D\u306E\u307E\u307E\u3002</div>
+  pane.innerHTML=`<div class="card"><h2>局所高次化で剤性誤差→機械精度 (1-D, 検証済)</h2>
+    <table><tr><th>次数</th><th>固有値誤差</th><th>バー(log)</th></tr>${rows}</table>
+    <div class="hint" style="margin-top:8px">「次元拡張→射影」の検証可能な形：sinはP1に入らないthat、十分豊かな局所空間（P8）で機械精度。Kを豊かに、Mはそのまま。</div>
     <div class="src">script: <span class="mono">fluid_highorder_accuracy_verify.py</span> &middot; doc: 06f</div></div>`;
 }
 function showScope(){
   pane.innerHTML=`
-   <div class="card earned"><h2>\u691C\u8A3C\u6E08\u307F (earned)</h2><ul>${MODEL.earned.map(x=>`<li>${x}</li>`).join("")}</ul></div>
-   <div class="card nearned"><h2>\u4E3B\u5F35\u3057\u306A\u3044 (not earned \u00B7 from 06z)</h2><ul>${MODEL.notEarned.map(x=>`<li>${x}</li>`).join("")}</ul></div>
-   <div class="card"><h2>\u6700\u5148\u7AEF\u3068\u306E\u6BD4\u8F03 (vs SOTA)</h2><ul>${MODEL.sota.map(x=>`<li>${x}</li>`).join("")}</ul>
-     <div class="hint" style="margin-top:6px">\u30BD\u30EB\u30D0\u3068\u3057\u3066\u306F\u7AF6\u5408\u3057\u306A\u3044\u3002\u4FA1\u5024\u306F\u8A8D\u8B58\u8AD6\u7684\uFF08\u691C\u8A3C\u898F\u5F8B\u3068\u6982\u5FF5\u7684\u7D71\u4E00\uFF09\u3002</div></div>`;
+   <div class="card earned"><h2>検証済み (earned)</h2><ul>${MODEL.earned.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+   <div class="card nearned"><h2>主張しない (not earned · from 06z)</h2><ul>${MODEL.notEarned.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+   <div class="card"><h2>最先端との比較 (vs SOTA)</h2><ul>${MODEL.sota.map(x=>`<li>${x}</li>`).join("")}</ul>
+     <div class="hint" style="margin-top:6px">ソルバとしては競合しない。価値は認識論的（検証規律と概念的統一）。</div></div>`;
 }
 const panes={detail:()=>showDetail(MODEL.domains[0]),rule:showRule,enrich:showEnrich,scope:showScope};
 function setTab(t){

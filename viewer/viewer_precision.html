@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>KSF \u2014 \u7CBE\u5EA6\u306F\u672C\u5F53\u306B\u4E0A\u304C\u308B\u304B (\u7D30\u5206\u30FB\u9AD8\u6B21\u5316)</title>
+<title>KSF — 精度は本当に上がるか (細分・高次化)</title>
 <style>
   :root{--bg:#0a0e13;--panel:#121821;--ink:#e7eef6;--mut:#8aa0b4;--line:#24303d;--teal:#2dd4bf;--amber:#f59e0b;--blue:#60a5fa;--violet:#a78bfa;}
   *{box-sizing:border-box}
@@ -39,17 +39,17 @@
 </head>
 <body>
 <header>
-  <h1>\u7CBE\u5EA6\u306F\u672C\u5F53\u306B\u4E0A\u304C\u308B\u304B \u2014 (1)\u7D30\u5206 + (3)\u9AD8\u6B21\u5316</h1>
-  <div class="sub">\u30EC\u30D6\u8ABF\u67FB\uFF0810\uFF09\u306E\u307E\u3068\u3081\u3002\u8868\u793A\u6570\u5024\u306F\u3059\u3079\u3066\u691C\u8A3C\u30B9\u30AF\u30EA\u30D7\u30C8\u51FA\u529B\uFF08\u30D6\u30E9\u30A6\u30B6\u5185\u8A08\u7B97\u306A\u3057\uFF09\u3002</div>
+  <h1>精度は本当に上がるか — (1)細分 + (3)高次化</h1>
+  <div class="sub">レブ調査（10）のまとめ。表示数値はすべて検証スクリプト出力（ブラウザ内計算なし）。</div>
 </header>
 <div id="wrap">
   <div id="side">
     <div class="seg" id="nav">
-      <button data-v="enrich" class="on">\u9AD8\u6B21\u5316 P1\u2192P8</button>
-      <button data-v="refine">\u7D30\u5206 O(h\u00B2)</button>
-      <button data-v="cavity">\u5B9F\u30D9\u30F3\u30C1\u30DE\u30FC\u30AF</button>
-      <button data-v="rev">\u30EC\u30D6\u306E\u5206\u96E2</button>
-      <button data-v="summary">\u307E\u3068\u3081</button>
+      <button data-v="enrich" class="on">高次化 P1→P8</button>
+      <button data-v="refine">細分 O(h²)</button>
+      <button data-v="cavity">実ベンチマーク</button>
+      <button data-v="rev">レブの分離</button>
+      <button data-v="summary">まとめ</button>
     </div>
   </div>
   <div id="stage"><div id="pane"></div></div>
@@ -91,22 +91,22 @@ function logChart(points, key, color, color2, points2){
 const V={
   enrich(){const e=PRECISION.enrichment;return card(e.title,e.source,
      logChart(e.points,'err','amber'),
-     `\u6B63\u5F26\u30E2\u30FC\u30C9\uFF08(3)\u5834\u56FA\u6709\uFF09\u306E\u8AA4\u5DEE\u304C\u3001\u5C40\u6240\u6B21\u6570\u3092\u4E0A\u3052\u308B\u3060\u3051\u3067 P1 2e-2 \u2192 P8 2e-13 \u3068\u30B9\u30DA\u30AF\u30C8\u30EB\u53CE\u675F\u3002K\u3092\u8C4A\u304B\u306B\u3059\u308B\u3060\u3051\u3067\u6A5F\u68B0\u7CBE\u5EA6\u3002`);},
+     `正弦モード（(3)場固有）の誤差が、局所次数を上げるだけで P1 2e-2 → P8 2e-13 とスペクトル収束。Kを豊かにするだけで機械精度。`);},
   refine(){const e=PRECISION.refinement;
     // linear-ish % chart via log
     return card(e.title,e.source,logChart(e.points,'err','amber'),
-     `\u5264\u6027\u8AA4\u5DEE\uFF08(1)\u8FD1\u4F3C\uFF09\u306F\u30E1\u30C3\u30B7\u30E5\u3092\u7D30\u304B\u304F\u3059\u308B\u3068 5.0%\u21921.3% \u3068 O(h\u00B2) \u3067\u6E1B\u308B\u3002\u8CEA\u91CF M \u306F\u5168 n \u3067 0%\uFF08\u53B3\u5BC6\uFF09\u3002`);},
+     `剤性誤差（(1)近似）はメッシュを細かくすると 5.0%→1.3% と O(h²) で減る。質量 M は全 n で 0%（厳密）。`);},
   cavity(){const e=PRECISION.cavity;return card(e.title,e.source,
      logChart(e.pspg,'err','amber','blue',e.th),
-     `<span class="leg"><span><span class="dot" style="background:var(--amber)"></span>PSPG (P1\u7D30\u5206)</span><span><span class="dot" style="background:var(--blue)"></span>Taylor-Hood (P2\u9AD8\u6B21)</span></span><br>\u5B9F\u30D9\u30F3\u30C1\u30DE\u30FC\u30AF\uFF08Ghia Re=1000\uFF09\u3067\u3082\u3001\u7D30\u5206\u3068\u9AD8\u6B21\u5316\u3067\u8AA4\u5DEE\u304C\u6E1B\u308B\u3002TH\uFF08\u9AD8\u6B21\uF03D\u9AD8\u6B21\u5316\uFF09\u306F\u5C11\u306A\u3044\u7BC0\u70B9\u3067\u9AD8\u7CBE\u5EA6\u3002`);},
-  rev(){const r=PRECISION.revSeparation;return card("\u30EC\u30D6\u306E\u5206\u96E2\uFF1A\u6570\u5024(1) vs \u7269\u7406(3)","10",
+     `<span class="leg"><span><span class="dot" style="background:var(--amber)"></span>PSPG (P1細分)</span><span><span class="dot" style="background:var(--blue)"></span>Taylor-Hood (P2高次)</span></span><br>実ベンチマーク（Ghia Re=1000）でも、細分と高次化で誤差が減る。TH（高次＝高次化）は少ない節点で高精度。`);},
+  rev(){const r=PRECISION.revSeparation;return card("レブの分離：数値(1) vs 物理(3)","10",
      logChart(r.numerical.points,'err','amber','blue',r.physical.points),
      `<span class="leg"><span><span class="dot" style="background:var(--amber)"></span>${r.numerical.label}</span><span><span class="dot" style="background:var(--blue)"></span>${r.physical.label}</span></span><br>
-      \u6570\u5024\u306E\u30EC\u30D6\u306F\u7D30\u5206\u3067 <b>\u6E1B\u308B</b>\uFF08(1)\u8FD1\u4F3C\uFF09\u3002\u7269\u7406\u306E\u30EC\u30D6\uFF08\u30B3\u30FC\u30CA\u30FC\u6E26\uFF09\u306F\u4E00\u5B9A\u5024\u306B <b>\u53CE\u675F</b>\uFF08(3)\u5834\u56FA\u6709\uFF09\u3002\u4E21\u8005\u306F\u5225\u7269\u3002`);},
+      数値のレブは細分で <b>減る</b>（(1)近似）。物理のレブ（コーナー渦）は一定値に <b>収束</b>（(3)場固有）。両者は別物。`);},
   summary(){let li=PRECISION.summary.map(s=>`<li>${s}</li>`).join("");
-    return `<div class="card"><h2>\u307E\u3068\u3081 \u2014 \u7CBE\u5EA6\u306F\u672C\u5F53\u306B\u4E0A\u304C\u308B</h2>
+    return `<div class="card"><h2>まとめ — 精度は本当に上がる</h2>
       <div class="src">06d / 06f / 08b / 10</div><ul>${li}</ul>
-      <div class="note">\u300C\u9AD8\u6B21\u5316\u3059\u308C\u3070\u672C\u5F53\u306B\u7CBE\u5EA6\u304C\u4E0A\u304C\u308B\u304B\u300D\u2192 \u4E0A\u304C\u308B\u3002\u305F\u3060\u3057\u4E0A\u304C\u308B\u306E\u306F\u8FD1\u4F3C\u8AA4\u5DEE(1)\u3068\u5264\u6027\u3002\u5834\u56FA\u6709(3)\u306E\u69CB\u9020\u81EA\u4F53\u306F\u6B8B\u308B\uFF08\u305D\u308C\u304C\u6B63\u3057\u3044\u7269\u7406\uFF09\u3002</div></div>`;}
+      <div class="note">「高次化すれば本当に精度が上がるか」→ 上がる。ただし上がるのは近似誤差(1)と剤性。場固有(3)の構造自体は残る（それが正しい物理）。</div></div>`;}
 };
 function card(title,source,chart,note){
   return `<div class="card"><h2>${title}</h2><div class="src">${source}</div>${chart}<div class="note">${note}</div></div>`;

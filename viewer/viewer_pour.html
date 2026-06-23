@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>KSF \u2014 \u6CE8\u6C34\u306E\u6E26 (GLSL / Navier\u2013Stokes)</title>
+<title>KSF — 注水の渦 (GLSL / Navier–Stokes)</title>
 <style>
   :root{--bg:#0a0e13;--panel:#121821;--ink:#e7eef6;--mut:#8aa0b4;--line:#24303d;--teal:#2dd4bf;--amber:#f59e0b;}
   *{box-sizing:border-box}
@@ -34,34 +34,34 @@
 </head>
 <body>
 <header>
-  <h1>\u6CE8\u6C34\u306E\u6E26 \u2014 \u5186\u67F1\u30B3\u30C3\u30D7 vs \u89D2\u67F1\u306E\u5347 <span class="tag">GLSL / NS</span></h1>
-  <div class="sub">\u6CE8\u304E\u8FBC\u307F\u306B\u3088\u308B\u4E8C\u6B21\u6E26\u3002\u4E38\u3044\u30B3\u30C3\u30D7\u306F\u6ED1\u3089\u304B\u3001\u89D2\u3042\u308B\u5347\u306B\u306F\u30B3\u30FC\u30CA\u30FC\u6E26\uFF08Moffatt\uFF09\u3002\u691C\u8A3C\u6E08\u306E\u7269\u7406\uFF0810\uFF09\u306B\u57FA\u3065\u304F\u5B9A\u6027\u53EF\u8996\u5316\u3002</div>
+  <h1>注水の渦 — 円柱コップ vs 角柱の升 <span class="tag">GLSL / NS</span></h1>
+  <div class="sub">注ぎ込みによる二次渦。丸いコップは滑らか、角ある升にはコーナー渦（Moffatt）。検証済の物理（10）に基づく定性可視化。</div>
 </header>
 <div id="wrap">
   <div id="side">
     <div class="seg" id="shape">
-      <button data-s="0" class="on">\u5186\u67F1\u30B3\u30C3\u30D7</button>
-      <button data-s="1">\u89D2\u67F1\u306E\u5347</button>
+      <button data-s="0" class="on">円柱コップ</button>
+      <button data-s="1">角柱の升</button>
     </div>
-    <label>\u30EC\u30A4\u30CE\u30EB\u30BA\u6570 Re = <span class="val" id="reLab">800</span></label>
+    <label>レイノルズ数 Re = <span class="val" id="reLab">800</span></label>
     <input type="range" id="re" min="50" max="2500" value="800" step="50"/>
-    <label>\u6CE8\u6C34\u306E\u52E2\u3044 (\u4E2D\u592E\u6D41\u5165) = <span class="val" id="inLab">0.6</span></label>
+    <label>注水の勢い (中央流入) = <span class="val" id="inLab">0.6</span></label>
     <input type="range" id="inflow" min="0" max="1" value="0.6" step="0.05"/>
-    <label>\u8868\u793A: <span class="val" id="modeLab">\u6E26\u5EA6</span></label>
+    <label>表示: <span class="val" id="modeLab">渦度</span></label>
     <div class="seg" id="mode">
-      <button data-m="0" class="on">\u6E26\u5EA6</button>
-      <button data-m="1">\u6D41\u7DDA</button>
-      <button data-m="2">\u901F\u3055</button>
+      <button data-m="0" class="on">渦度</button>
+      <button data-m="1">流線</button>
+      <button data-m="2">速さ</button>
     </div>
 
     <div class="eq" id="eq">
-      <b>\u5B9A\u5E38\u975E\u5727\u7E2E NS</b><br>
-      (u\u00B7\u2207)u = \u2212\u2207p/\u03C1 + \u03BD\u2207\u00B2u<br>
-      \u2207\u00B7u = 0,  \u03BD = U L / Re<br><br>
-      <b>\u6E26\u5EA6</b> \u03C9 = \u2202v/\u2202x \u2212 \u2202u/\u2202y<br>
-      <b>\u4E3B\u6E26</b>: \u4E2D\u592E\u306E\u5927\u304D\u306A\u5FAA\u74B0<br>
-      <b>\u30B3\u30FC\u30CA\u30FC\u6E26</b>(Moffatt): \u89D2\u3067 \u03C8 \u221D r\u00B7e^{\u2212\u03BB\u03B8}<br>
-      \u2014 \u9006\u56DE\u308A\u306E\u5C0F\u6E26\u304C\u5165\u308C\u5B50\u72B6\u306B
+      <b>定常非圧縮 NS</b><br>
+      (u·∇)u = −∇p/ρ + ν∇²u<br>
+      ∇·u = 0,  ν = U L / Re<br><br>
+      <b>渦度</b> ω = ∂v/∂x − ∂u/∂y<br>
+      <b>主渦</b>: 中央の大きな循環<br>
+      <b>コーナー渦</b>(Moffatt): 角で ψ ∝ r·e^{−λθ}<br>
+      — 逆回りの小渦が入れ子状に
     </div>
     <div class="note" id="note"></div>
   </div>
@@ -169,8 +169,8 @@ window.addEventListener('resize',resize);
 function notes(){
   const n=document.getElementById('note');
   n.innerHTML = state.shape===0
-   ? "\u5186\u67F1\u30B3\u30C3\u30D7: \u89D2\u304C\u7121\u3044\u305F\u3081 Moffatt \u30B3\u30FC\u30CA\u30FC\u6E26\u306F\u751F\u3058\u305A\u3001\u4E2D\u592E\u4E3B\u6E26\u304C\u6ED1\u3089\u304B\u306B\u5468\u308B\u3002"
-   : "\u89D2\u67F1\u306E\u5347: \u56DB\u3064\u306E\u89D2\u306B\u9006\u56DE\u308A\u306E Moffatt \u6E26\u304C\u5165\u308C\u5B50\u72B6\u306B\u73FE\u308C\u308B\u3002Re \u3092\u4E0A\u3052\u308B\u3068\u4E8C\u6B21\u6E26\u304C\u5F37\u307E\u308B\uFF0810\u7AE0\u306E\u691C\u8A3C\uFF09\u3002";
+   ? "円柱コップ: 角が無いため Moffatt コーナー渦は生じず、中央主渦が滑らかに周る。"
+   : "角柱の升: 四つの角に逆回りの Moffatt 渦が入れ子状に現れる。Re を上げると二次渦が強まる（10章の検証）。";
 }
 function render(){
   state.t+=0.016;
@@ -185,7 +185,7 @@ document.querySelectorAll('#shape button').forEach(b=>b.onclick=()=>{
   state.shape=+b.dataset.s;notes();});
 document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
-  state.mode=+b.dataset.m;document.getElementById('modeLab').textContent=['\u6E26\u5EA6','\u6D41\u7DDA','\u901F\u3055'][state.mode];});
+  state.mode=+b.dataset.m;document.getElementById('modeLab').textContent=['渦度','流線','速さ'][state.mode];});
 document.getElementById('re').oninput=e=>{state.Re=+e.target.value;document.getElementById('reLab').textContent=state.Re;};
 document.getElementById('inflow').oninput=e=>{state.inflow=+e.target.value;document.getElementById('inLab').textContent=(+e.target.value).toFixed(2);};
 resize();notes();render();
