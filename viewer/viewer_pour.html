@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>KSF \u2014 \u6CE8\u6C34\u306E\u6E26 (GLSL / Navier\u2013Stokes)</title>
+<style>
+  :root{--bg:#0a0e13;--panel:#121821;--ink:#e7eef6;--mut:#8aa0b4;--line:#24303d;--teal:#2dd4bf;--amber:#f59e0b;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif}
+  header{padding:14px 18px 8px;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 2px;font-size:17px}
+  .sub{color:var(--mut);font-size:12px}
+  #wrap{display:flex;height:calc(100vh - 58px)}
+  #side{width:280px;min-width:280px;background:var(--panel);border-right:1px solid var(--line);padding:14px;overflow-y:auto}
+  #stage{flex:1;position:relative;min-width:0}
+  canvas{display:block;width:100%;height:100%}
+  .seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;margin:8px 0}
+  .seg button{flex:1;padding:9px 0;background:transparent;border:none;color:var(--mut);font:inherit;font-size:12.5px;cursor:pointer}
+  .seg button.on{background:#1b2430;color:var(--ink)}
+  label{display:block;font-size:11.5px;color:var(--mut);margin:12px 0 3px}
+  input[type=range]{width:100%;accent-color:var(--amber)}
+  .val{color:var(--teal);font-weight:600}
+  .eq{background:#0e141c;border:1px solid var(--line);border-radius:8px;padding:10px;margin:12px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.7;color:#cfe}
+  .eq b{color:var(--amber)}
+  .note{font-size:11.5px;color:var(--mut);margin-top:10px}
+  .tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:700;background:rgba(45,212,191,.14);color:var(--teal);margin-left:6px}
+  @media (max-width:760px){
+    #wrap{flex-direction:column;height:auto;min-height:100vh}
+    #side{width:100%;min-width:0;border-right:none;border-bottom:1px solid var(--line)}
+    #stage{height:60vh;min-height:340px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>\u6CE8\u6C34\u306E\u6E26 \u2014 \u5186\u67F1\u30B3\u30C3\u30D7 vs \u89D2\u67F1\u306E\u5347 <span class="tag">GLSL / NS</span></h1>
+  <div class="sub">\u6CE8\u304E\u8FBC\u307F\u306B\u3088\u308B\u4E8C\u6B21\u6E26\u3002\u4E38\u3044\u30B3\u30C3\u30D7\u306F\u6ED1\u3089\u304B\u3001\u89D2\u3042\u308B\u5347\u306B\u306F\u30B3\u30FC\u30CA\u30FC\u6E26\uFF08Moffatt\uFF09\u3002\u691C\u8A3C\u6E08\u306E\u7269\u7406\uFF0810\uFF09\u306B\u57FA\u3065\u304F\u5B9A\u6027\u53EF\u8996\u5316\u3002</div>
+</header>
+<div id="wrap">
+  <div id="side">
+    <div class="seg" id="shape">
+      <button data-s="0" class="on">\u5186\u67F1\u30B3\u30C3\u30D7</button>
+      <button data-s="1">\u89D2\u67F1\u306E\u5347</button>
+    </div>
+    <label>\u30EC\u30A4\u30CE\u30EB\u30BA\u6570 Re = <span class="val" id="reLab">800</span></label>
+    <input type="range" id="re" min="50" max="2500" value="800" step="50"/>
+    <label>\u6CE8\u6C34\u306E\u52E2\u3044 (\u4E2D\u592E\u6D41\u5165) = <span class="val" id="inLab">0.6</span></label>
+    <input type="range" id="inflow" min="0" max="1" value="0.6" step="0.05"/>
+    <label>\u8868\u793A: <span class="val" id="modeLab">\u6E26\u5EA6</span></label>
+    <div class="seg" id="mode">
+      <button data-m="0" class="on">\u6E26\u5EA6</button>
+      <button data-m="1">\u6D41\u7DDA</button>
+      <button data-m="2">\u901F\u3055</button>
+    </div>
+
+    <div class="eq" id="eq">
+      <b>\u5B9A\u5E38\u975E\u5727\u7E2E NS</b><br>
+      (u\u00B7\u2207)u = \u2212\u2207p/\u03C1 + \u03BD\u2207\u00B2u<br>
+      \u2207\u00B7u = 0,  \u03BD = U L / Re<br><br>
+      <b>\u6E26\u5EA6</b> \u03C9 = \u2202v/\u2202x \u2212 \u2202u/\u2202y<br>
+      <b>\u4E3B\u6E26</b>: \u4E2D\u592E\u306E\u5927\u304D\u306A\u5FAA\u74B0<br>
+      <b>\u30B3\u30FC\u30CA\u30FC\u6E26</b>(Moffatt): \u89D2\u3067 \u03C8 \u221D r\u00B7e^{\u2212\u03BB\u03B8}<br>
+      \u2014 \u9006\u56DE\u308A\u306E\u5C0F\u6E26\u304C\u5165\u308C\u5B50\u72B6\u306B
+    </div>
+    <div class="note" id="note"></div>
+  </div>
+  <div id="stage"><canvas id="cv"></canvas></div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'); const gl=cv.getContext('webgl');
+let state={shape:0,Re:800,inflow:0.6,mode:0,t:0};
+
+const VERT=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
+// 検証済み物理に基づく定性可視化:
+//  主渦(中央循環) + Moffatt型コーナー渦(角柱のみ角に逆回りの減衰渦)
+//  Reで二次渦が強まる(10章の検証: 移流で成長)。丸コップは角が無く滑らか。
+const FRAG=`
+precision highp float;
+uniform vec2 res; uniform float Re, inflow, t; uniform int shape, mode;
+#define PI 3.14159265
+
+// 主渦の流れ関数(中央循環)。容器内 [-1,1]^2 想定、円 or 角でマスク。
+float psiMain(vec2 q){
+  float r=length(q);
+  // 中央で強い循環、壁でゼロ。注水でやや上方駆動
+  return (1.0-r*r)*(0.6+0.4*inflow)*(1.0+0.15*q.y);
+}
+// Moffatt コーナー渦: 角(±1,±1)近傍で psi ~ d * cos(k*log d) の減衰振動(逆回り入れ子)
+float cornerEddy(vec2 q){
+  if(shape==0) return 0.0;        // 円柱コップは角が無い -> コーナー渦なし
+  float s=0.0;
+  vec2 corners[4];
+  corners[0]=vec2(-1.,-1.); corners[1]=vec2(1.,-1.);
+  corners[2]=vec2(-1.,1.);  corners[3]=vec2(1.,1.);
+  for(int i=0;i<4;i++){
+    vec2 c=corners[i]; vec2 d=q-c; float dd=length(d);
+    if(dd<0.55){
+      // 角からの距離で減衰振動(Moffatt自己相似渦列)。Reで強度↑(10章: 移流で成長)
+      float ang=atan(abs(d.y),abs(d.x));
+      float reb=clamp((Re-150.)/2000.,0.0,1.0);
+      s+=reb*0.18*exp(-6.0*dd)*sin(7.0*log(dd+0.04))*sin(2.0*ang);
+    }
+  }
+  return s;
+}
+float psi(vec2 q){ return psiMain(q)+cornerEddy(q); }
+
+// 速度 = curl(psi): u=∂psi/∂y, v=-∂psi/∂x  (有限差分)
+vec2 vel(vec2 q){
+  float e=0.004;
+  float dpx=(psi(q+vec2(e,0.))-psi(q-vec2(e,0.)))/(2.*e);
+  float dpy=(psi(q+vec2(0.,e))-psi(q-vec2(0.,e)))/(2.*e);
+  return vec2(dpy,-dpx);
+}
+float vort(vec2 q){
+  float e=0.004;
+  vec2 vx1=vel(q+vec2(e,0.)),vx0=vel(q-vec2(e,0.));
+  vec2 vy1=vel(q+vec2(0.,e)),vy0=vel(q-vec2(0.,e));
+  return (vx1.y-vx0.y)/(2.*e)-(vy1.x-vy0.x)/(2.*e);
+}
+bool inside(vec2 q){
+  if(shape==0) return length(q)<1.0;     // 円
+  return abs(q.x)<1.0 && abs(q.y)<1.0;    // 角(升)
+}
+vec3 ramp(float x){ // teal->dark->amber 双極
+  x=clamp(x,-1.,1.);
+  vec3 pos=mix(vec3(.05,.08,.11),vec3(.96,.62,.07),clamp(x,0.,1.));
+  vec3 neg=mix(vec3(.05,.08,.11),vec3(.18,.83,.75),clamp(-x,0.,1.));
+  return x>=0.?pos:neg;
+}
+void main(){
+  vec2 uv=(gl_FragCoord.xy/res)*2.0-1.0; uv.x*=res.x/res.y;
+  vec2 q=uv*1.18;
+  if(!inside(q)){ gl_FragColor=vec4(0.03,0.05,0.07,1.); return; }
+  vec3 col;
+  if(mode==0){ col=ramp(vort(q)*1.6); }
+  else if(mode==2){ float sp=length(vel(q)); col=mix(vec3(.05,.08,.11),vec3(.18,.83,.75),sp*1.3); }
+  else {
+    // 流線: psi の等値線
+    float ps=psi(q); float band=abs(fract(ps*9.0+0.5)-0.5);
+    float line=smoothstep(0.06,0.0,band);
+    vec2 v=vel(q); float sp=length(v);
+    col=mix(vec3(.06,.09,.12),vec3(.55,.78,.95),line)*(0.5+0.8*sp);
+  }
+  // 壁の縁取り
+  float edge = shape==0 ? smoothstep(0.02,0.0,abs(length(q)-1.0))
+                        : smoothstep(0.02,0.0,min(1.0-abs(q.x),1.0-abs(q.y)));
+  col=mix(col,vec3(.55,.62,.72),edge*0.6);
+  gl_FragColor=vec4(col,1.);
+}`;
+
+function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(s));return s;}
+const prog=gl.createProgram();
+gl.attachShader(prog,sh(gl.VERTEX_SHADER,VERT));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FRAG));
+gl.linkProgram(prog);gl.useProgram(prog);
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+const pl=gl.getAttribLocation(prog,'p');gl.enableVertexAttribArray(pl);gl.vertexAttribPointer(pl,2,gl.FLOAT,false,0,0);
+const U={res:gl.getUniformLocation(prog,'res'),Re:gl.getUniformLocation(prog,'Re'),
+  inflow:gl.getUniformLocation(prog,'inflow'),t:gl.getUniformLocation(prog,'t'),
+  shape:gl.getUniformLocation(prog,'shape'),mode:gl.getUniformLocation(prog,'mode')};
+
+function resize(){const r=cv.getBoundingClientRect();cv.width=r.width*devicePixelRatio;cv.height=r.height*devicePixelRatio;gl.viewport(0,0,cv.width,cv.height);}
+window.addEventListener('resize',resize);
+
+function notes(){
+  const n=document.getElementById('note');
+  n.innerHTML = state.shape===0
+   ? "\u5186\u67F1\u30B3\u30C3\u30D7: \u89D2\u304C\u7121\u3044\u305F\u3081 Moffatt \u30B3\u30FC\u30CA\u30FC\u6E26\u306F\u751F\u3058\u305A\u3001\u4E2D\u592E\u4E3B\u6E26\u304C\u6ED1\u3089\u304B\u306B\u5468\u308B\u3002"
+   : "\u89D2\u67F1\u306E\u5347: \u56DB\u3064\u306E\u89D2\u306B\u9006\u56DE\u308A\u306E Moffatt \u6E26\u304C\u5165\u308C\u5B50\u72B6\u306B\u73FE\u308C\u308B\u3002Re \u3092\u4E0A\u3052\u308B\u3068\u4E8C\u6B21\u6E26\u304C\u5F37\u307E\u308B\uFF0810\u7AE0\u306E\u691C\u8A3C\uFF09\u3002";
+}
+function render(){
+  state.t+=0.016;
+  gl.uniform2f(U.res,cv.width,cv.height);
+  gl.uniform1f(U.Re,state.Re);gl.uniform1f(U.inflow,state.inflow);gl.uniform1f(U.t,state.t);
+  gl.uniform1i(U.shape,state.shape);gl.uniform1i(U.mode,state.mode);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  requestAnimationFrame(render);
+}
+document.querySelectorAll('#shape button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#shape button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  state.shape=+b.dataset.s;notes();});
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  state.mode=+b.dataset.m;document.getElementById('modeLab').textContent=['\u6E26\u5EA6','\u6D41\u7DDA','\u901F\u3055'][state.mode];});
+document.getElementById('re').oninput=e=>{state.Re=+e.target.value;document.getElementById('reLab').textContent=state.Re;};
+document.getElementById('inflow').oninput=e=>{state.inflow=+e.target.value;document.getElementById('inLab').textContent=(+e.target.value).toFixed(2);};
+resize();notes();render();
+</script>
+</body>
+</html>

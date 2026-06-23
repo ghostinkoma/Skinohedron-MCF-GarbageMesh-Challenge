@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>KSF \u2014 \u7CBE\u5EA6\u306F\u672C\u5F53\u306B\u4E0A\u304C\u308B\u304B (\u7D30\u5206\u30FB\u9AD8\u6B21\u5316)</title>
+<style>
+  :root{--bg:#0a0e13;--panel:#121821;--ink:#e7eef6;--mut:#8aa0b4;--line:#24303d;--teal:#2dd4bf;--amber:#f59e0b;--blue:#60a5fa;--violet:#a78bfa;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif}
+  header{padding:14px 18px 8px;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 2px;font-size:17px}.sub{color:var(--mut);font-size:12px}
+  #wrap{display:flex;height:calc(100vh - 58px)}
+  #side{width:250px;min-width:250px;background:var(--panel);border-right:1px solid var(--line);padding:14px;overflow-y:auto}
+  #stage{flex:1;padding:18px;overflow-y:auto;min-width:0}
+  .seg{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+  .seg button{padding:10px 12px;background:transparent;border:1px solid var(--line);border-radius:8px;color:var(--mut);font:inherit;font-size:12.5px;cursor:pointer;text-align:left}
+  .seg button.on{background:#1b2430;color:var(--ink);border-color:#33455a}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  .card h2{margin:0 0 4px;font-size:14px}
+  .src{color:var(--mut);font-size:11px;margin-bottom:10px}
+  svg{width:100%;height:auto;display:block}
+  .ax{stroke:var(--line);stroke-width:1}
+  .gl{stroke:#1a2330;stroke-width:1}
+  .lab{fill:var(--mut);font-size:10px}
+  .pt{fill:var(--amber)}
+  .pl{stroke:var(--amber);stroke-width:2;fill:none}
+  .pt2{fill:var(--blue)}.pl2{stroke:var(--blue);stroke-width:2;fill:none}
+  .note{font-size:12px;color:var(--mut);margin-top:8px}
+  ul{margin:8px 0;padding-left:18px;font-size:12.5px}li{margin:4px 0}
+  .leg{display:flex;gap:14px;font-size:11.5px;margin-top:6px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  @media (max-width:760px){
+    #wrap{flex-direction:column;height:auto;min-height:100vh}
+    #side{width:100%;min-width:0;border-right:none;border-bottom:1px solid var(--line)}
+    #stage{height:auto}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>\u7CBE\u5EA6\u306F\u672C\u5F53\u306B\u4E0A\u304C\u308B\u304B \u2014 (1)\u7D30\u5206 + (3)\u9AD8\u6B21\u5316</h1>
+  <div class="sub">\u30EC\u30D6\u8ABF\u67FB\uFF0810\uFF09\u306E\u307E\u3068\u3081\u3002\u8868\u793A\u6570\u5024\u306F\u3059\u3079\u3066\u691C\u8A3C\u30B9\u30AF\u30EA\u30D7\u30C8\u51FA\u529B\uFF08\u30D6\u30E9\u30A6\u30B6\u5185\u8A08\u7B97\u306A\u3057\uFF09\u3002</div>
+</header>
+<div id="wrap">
+  <div id="side">
+    <div class="seg" id="nav">
+      <button data-v="enrich" class="on">\u9AD8\u6B21\u5316 P1\u2192P8</button>
+      <button data-v="refine">\u7D30\u5206 O(h\u00B2)</button>
+      <button data-v="cavity">\u5B9F\u30D9\u30F3\u30C1\u30DE\u30FC\u30AF</button>
+      <button data-v="rev">\u30EC\u30D6\u306E\u5206\u96E2</button>
+      <button data-v="summary">\u307E\u3068\u3081</button>
+    </div>
+  </div>
+  <div id="stage"><div id="pane"></div></div>
+</div>
+
+<script src="data_precision.js"></script>
+<script>
+const pane=document.getElementById('pane');
+const W=560,H=320,M={l:64,r:20,t:24,b:42};
+function logChart(points, key, color, color2, points2){
+  // log scale on error
+  const all=points.map(p=>p[key]).concat(points2?points2.map(p=>p[key]):[]);
+  const lo=Math.log10(Math.min(...all)), hi=Math.log10(Math.max(...all));
+  const pad=(hi-lo)*0.08||1; const ymin=lo-pad, ymax=hi+pad;
+  const xN=points.length;
+  const X=i=>M.l+(W-M.l-M.r)*(i/(xN-1));
+  const Y=v=>M.t+(H-M.t-M.b)*(1-(Math.log10(v)-ymin)/(ymax-ymin));
+  let g=`<svg viewBox="0 0 ${W} ${H}">`;
+  // gridlines (decades)
+  for(let d=Math.ceil(ymin);d<=Math.floor(ymax);d++){
+    const y=M.t+(H-M.t-M.b)*(1-(d-ymin)/(ymax-ymin));
+    g+=`<line class="gl" x1="${M.l}" y1="${y}" x2="${W-M.r}" y2="${y}"/>`;
+    g+=`<text class="lab" x="${M.l-8}" y="${y+3}" text-anchor="end">1e${d}</text>`;
+  }
+  g+=`<line class="ax" x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H-M.b}"/>`;
+  g+=`<line class="ax" x1="${M.l}" y1="${H-M.b}" x2="${W-M.r}" y2="${H-M.b}"/>`;
+  function poly(pts,k,cls,dcls){
+    let d='';pts.forEach((p,i)=>{d+=(i?'L':'M')+X(i)+' '+Y(p[k])+' ';});
+    let s=`<path class="${cls}" d="${d}"/>`;
+    pts.forEach((p,i)=>{s+=`<circle class="${dcls}" cx="${X(i)}" cy="${Y(p[k])}" r="4"/>`;});
+    return s;
+  }
+  g+=poly(points,key,'pl','pt');
+  if(points2) g+=poly(points2,key,'pl2','pt2');
+  points.forEach((p,i)=>{g+=`<text class="lab" x="${X(i)}" y="${H-M.b+16}" text-anchor="middle">${p.x}</text>`;});
+  g+=`</svg>`;
+  return g;
+}
+const V={
+  enrich(){const e=PRECISION.enrichment;return card(e.title,e.source,
+     logChart(e.points,'err','amber'),
+     `\u6B63\u5F26\u30E2\u30FC\u30C9\uFF08(3)\u5834\u56FA\u6709\uFF09\u306E\u8AA4\u5DEE\u304C\u3001\u5C40\u6240\u6B21\u6570\u3092\u4E0A\u3052\u308B\u3060\u3051\u3067 P1 2e-2 \u2192 P8 2e-13 \u3068\u30B9\u30DA\u30AF\u30C8\u30EB\u53CE\u675F\u3002K\u3092\u8C4A\u304B\u306B\u3059\u308B\u3060\u3051\u3067\u6A5F\u68B0\u7CBE\u5EA6\u3002`);},
+  refine(){const e=PRECISION.refinement;
+    // linear-ish % chart via log
+    return card(e.title,e.source,logChart(e.points,'err','amber'),
+     `\u5264\u6027\u8AA4\u5DEE\uFF08(1)\u8FD1\u4F3C\uFF09\u306F\u30E1\u30C3\u30B7\u30E5\u3092\u7D30\u304B\u304F\u3059\u308B\u3068 5.0%\u21921.3% \u3068 O(h\u00B2) \u3067\u6E1B\u308B\u3002\u8CEA\u91CF M \u306F\u5168 n \u3067 0%\uFF08\u53B3\u5BC6\uFF09\u3002`);},
+  cavity(){const e=PRECISION.cavity;return card(e.title,e.source,
+     logChart(e.pspg,'err','amber','blue',e.th),
+     `<span class="leg"><span><span class="dot" style="background:var(--amber)"></span>PSPG (P1\u7D30\u5206)</span><span><span class="dot" style="background:var(--blue)"></span>Taylor-Hood (P2\u9AD8\u6B21)</span></span><br>\u5B9F\u30D9\u30F3\u30C1\u30DE\u30FC\u30AF\uFF08Ghia Re=1000\uFF09\u3067\u3082\u3001\u7D30\u5206\u3068\u9AD8\u6B21\u5316\u3067\u8AA4\u5DEE\u304C\u6E1B\u308B\u3002TH\uFF08\u9AD8\u6B21\uF03D\u9AD8\u6B21\u5316\uFF09\u306F\u5C11\u306A\u3044\u7BC0\u70B9\u3067\u9AD8\u7CBE\u5EA6\u3002`);},
+  rev(){const r=PRECISION.revSeparation;return card("\u30EC\u30D6\u306E\u5206\u96E2\uFF1A\u6570\u5024(1) vs \u7269\u7406(3)","10",
+     logChart(r.numerical.points,'err','amber','blue',r.physical.points),
+     `<span class="leg"><span><span class="dot" style="background:var(--amber)"></span>${r.numerical.label}</span><span><span class="dot" style="background:var(--blue)"></span>${r.physical.label}</span></span><br>
+      \u6570\u5024\u306E\u30EC\u30D6\u306F\u7D30\u5206\u3067 <b>\u6E1B\u308B</b>\uFF08(1)\u8FD1\u4F3C\uFF09\u3002\u7269\u7406\u306E\u30EC\u30D6\uFF08\u30B3\u30FC\u30CA\u30FC\u6E26\uFF09\u306F\u4E00\u5B9A\u5024\u306B <b>\u53CE\u675F</b>\uFF08(3)\u5834\u56FA\u6709\uFF09\u3002\u4E21\u8005\u306F\u5225\u7269\u3002`);},
+  summary(){let li=PRECISION.summary.map(s=>`<li>${s}</li>`).join("");
+    return `<div class="card"><h2>\u307E\u3068\u3081 \u2014 \u7CBE\u5EA6\u306F\u672C\u5F53\u306B\u4E0A\u304C\u308B</h2>
+      <div class="src">06d / 06f / 08b / 10</div><ul>${li}</ul>
+      <div class="note">\u300C\u9AD8\u6B21\u5316\u3059\u308C\u3070\u672C\u5F53\u306B\u7CBE\u5EA6\u304C\u4E0A\u304C\u308B\u304B\u300D\u2192 \u4E0A\u304C\u308B\u3002\u305F\u3060\u3057\u4E0A\u304C\u308B\u306E\u306F\u8FD1\u4F3C\u8AA4\u5DEE(1)\u3068\u5264\u6027\u3002\u5834\u56FA\u6709(3)\u306E\u69CB\u9020\u81EA\u4F53\u306F\u6B8B\u308B\uFF08\u305D\u308C\u304C\u6B63\u3057\u3044\u7269\u7406\uFF09\u3002</div></div>`;}
+};
+function card(title,source,chart,note){
+  return `<div class="card"><h2>${title}</h2><div class="src">${source}</div>${chart}<div class="note">${note}</div></div>`;
+}
+function show(v){pane.innerHTML=V[v]();
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));}
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+show('enrich');
+</script>
+</body>
+</html>
