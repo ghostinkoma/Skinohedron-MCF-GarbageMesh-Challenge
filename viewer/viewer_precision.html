@@ -49,6 +49,7 @@
       <button data-v="refine">細分 O(h²)</button>
       <button data-v="cavity">実ベンチマーク</button>
       <button data-v="rev">レブの分離</button>
+      <button data-v="residual">予想(2)(4)残差</button>
       <button data-v="summary">まとめ</button>
     </div>
   </div>
@@ -103,10 +104,15 @@ const V={
      logChart(r.numerical.points,'err','amber','blue',r.physical.points),
      `<span class="leg"><span><span class="dot" style="background:var(--amber)"></span>${r.numerical.label}</span><span><span class="dot" style="background:var(--blue)"></span>${r.physical.label}</span></span><br>
       数値のレブは細分で <b>減る</b>（(1)近似）。物理のレブ（コーナー渦）は一定値に <b>収束</b>（(3)場固有）。両者は別物。`);},
+  residual(){const r=PRECISION.residuals;return card(r.title,r.source,
+     logChart(r.compose.points,'err','amber'),
+     `<b>${r.coulomb.label}</b>: ${r.coulomb.off} → ${r.coulomb.on}<br><span class="note">${r.coulomb.note}</span><br><br>
+      <b>${r.reaction.label}</b>: ${r.reaction.off} → ${r.reaction.on}<br><span class="note">${r.reaction.note}</span><br><br>
+      <b>${r.compose.label}</b>（上図）: ${r.compose.note}`);},
   summary(){let li=PRECISION.summary.map(s=>`<li>${s}</li>`).join("");
     return `<div class="card"><h2>まとめ — 精度は本当に上がる</h2>
-      <div class="src">06d / 06f / 08b / 10</div><ul>${li}</ul>
-      <div class="note">「高次化すれば本当に精度が上がるか」→ 上がる。ただし上がるのは近似誤差(1)と剤性。場固有(3)の構造自体は残る（それが正しい物理）。</div></div>`;}
+      <div class="src">06d / 06f / 08b / 10 / 12</div><ul>${li}</ul>
+      <div class="note">「高次化すれば本当に精度が上がるか」→ 上がる。ただし上がるのは近似誤差(1)。場固有(3)の構造自体は残る（それが正しい物理）。予想(2)(4)は機械NSの残差を埋める別ドメイン/反応項として検証され、(1)と合成できる。</div></div>`;}
 };
 function card(title,source,chart,note){
   return `<div class="card"><h2>${title}</h2><div class="src">${source}</div>${chart}<div class="note">${note}</div></div>`;

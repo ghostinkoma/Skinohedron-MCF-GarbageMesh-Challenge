@@ -56,5 +56,20 @@ const PRECISION = {
     "(3) 場固有: 高次化で機械精度 (P1 2e-2 → P8 2e-13)",
     "質量 M は常に厳密 — K を豊かに、M はそのまま",
     "実ベンチマークでも細分・高次化で Ghia 誤差が減る"
-  ]
+  ],
+
+  // (2) Coulomb/EHD and (4) reaction residual fingerprints, and (1)+(2) compose (12).
+  residuals: {
+    title: "予想(2)(4)の残差: 機械NSが再現できない構造を項が埋める",
+    source: "12 / residual_domains_verify.py",
+    coulomb: { label:"(2) クーロン/EHD", off:"純機械NS 最大速度 0 (駆動なし)",
+      on:"クーロンON 0.007 (電荷に線形: 0.003/0.007/0.013)",
+      note:"Kφ=Mρ_q (06eの同じK) が機械NSの残差を埋める" },
+    reaction: { label:"(4) 反応 (Fisher-KPP)", off:"純移流拡散 総量保存 0.060 (薄まるだけ)",
+      on:"反応ON 総量 0.125 (増殖・フロント伝播, c→1)",
+      note:"反応項が移流拡散の残差(フロント)を埋める, 残差 0.142" },
+    compose: { label:"(1)+(2) 合成", points:[
+      {x:"n32",err:0.00660},{x:"n48",err:0.00657},{x:"n64",err:0.00658} ],
+      note:"EHD流れが細分で収束(連続差 3e-5→1e-5) = 高次化(1)がクーロン駆動流(2)の精度を上げる" }
+  }
 };
