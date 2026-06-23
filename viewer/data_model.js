@@ -29,8 +29,14 @@ const MODEL = {
     { id: "velocity", label: "Velocity  u", role: "momentum / incompressibility",
       precision: "div-free (machine) \u00B7 pressure-decoupled", color: "#60a5fa",
       fact: "\u2016Bu\u2016~1e-16 (algebraically trivial);  PSPG moves u only ~1e-4",
-      detail: "Divergence-free to machine precision \u2014 but that alone is an algebraic property of any projection. The EARNED result: the velocity is pressure-decoupled (fixing the checkerboard pressure, corr 0.0\u21920.94, changes u by only ~1e-4). Pressure itself is NOT trustworthy (inf-sup).",
-      script: "fluid_navier_stokes_verify.py / fluid_ns_velocity_quality_verify.py", doc: "06c" }
+      detail: "Divergence-free to machine precision \u2014 but that alone is an algebraic property of any projection. The EARNED result: the velocity is pressure-decoupled (fixing the checkerboard pressure, corr 0.0\u21920.94, changes u by only ~1e-4).",
+      script: "fluid_navier_stokes_verify.py / fluid_ns_velocity_quality_verify.py", doc: "06c" },
+
+    { id: "pressure", label: "Pressure  p", role: "incompressibility constraint (P0)",
+      precision: "stabilised \u2192 benchmark-valid", color: "#34d399",
+      fact: "PSPG cavity vs Ghia 1982 Re=100: u,v RMS 0.0095\u21920.0069 (n=48\u219264); pressure smooth",
+      detail: "Raw equal-order P1 pressure is inf-sup-unstable (06z). PSPG-stabilised, the lid-driven cavity matches the published Ghia benchmark on both centrelines (converging) with a SMOOTH pressure \u2014 validated against an EXTERNAL standard. The stabilisation is \u2212\u03C4K, the SAME operator K. Pressure is a correlation domain on L=M\u207B\u00B9K, in 2-D and 3-D alike. (Only Re=100 benchmarked; PSPG not a true inf-sup element.)",
+      script: "cavity_pspg_verify.py / cavity3d_demo.py", doc: "08" }
   ],
 
   // Readings of the one operator (operator identities)
@@ -66,8 +72,8 @@ const MODEL = {
   ],
   notEarned: [
     "\u2016Bu\u2016~1e-16 alone is an algebraic triviality \u2014 not a quality result",
-    "equal-order P1 pressure is inf-sup unstable / checkerboard \u2014 NOT trustworthy",
-    "battery is idealised: periodic Taylor\u2013Green + analytic interfaces; no cavity/cylinder/turbulence/experiment",
+    "RAW equal-order P1 pressure is checkerboard; STABILISED (PSPG) it matches Ghia Re=100 \u2014 but only Re=100, and PSPG is not a true inf-sup element",
+    "cavity now validates the foundation; cylinder / turbulence / time-dependence still untested",
     "the unifying narrative is interpretation on idealised tests \u2014 wider than the proof",
     "no first-principles \u03BD from molecular Coulomb (Green\u2013Kubo/MD out of scope)"
   ],

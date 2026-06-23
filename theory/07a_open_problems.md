@@ -7,7 +7,7 @@ valuable ones. Priority: **P0** = load-bearing (do before extending), **P1** = i
 
 ---
 
-## P0 — load-bearing (validate the foundation before building more)
+## P0 — load-bearing  [STEP 1/2 DONE: cavity matches Ghia Re=100, see 08]
 
 **1. Trustworthy pressure (inf-sup-stable / stabilised).**
 *What:* replace equal-order P1/P1 with a Taylor–Hood (P2–P1) or MINI pair, or adopt PSPG

@@ -62,6 +62,12 @@ recovered to `0.8%` (`06e`). **All** the smooth-mode error lives here, not in th
 is algebraically trivial on its own. The *earned* statement is that the velocity is
 **pressure-decoupled** (PSPG moves it only `~10⁻⁴`, `06c`).
 
+**Pressure `p`.** Once PSPG-stabilised, the lid-driven cavity matches the Ghia (1982)
+`Re=100` benchmark on both centrelines (`u,v` RMS `~7×10⁻³` at `n=64`, converging) with a
+smooth pressure (`08`). The stabilisation block is `−τK` — the **same operator** — so the
+pressure is a correlation domain on `L`, validated against an **external standard**, in
+2-D and 3-D alike. This closes the `06z` "pressure-not-trustworthy" gap (for `Re=100`).
+
 ---
 
 ## 3. The machine-precision rule (audit-corrected)

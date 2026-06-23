@@ -62,7 +62,7 @@
 </header>
 <div class="wrap">
   <div class="left">
-    <svg id="map" viewBox="0 0 560 460" aria-label="domain map"></svg>
+    <svg id="map" viewBox="0 0 560 520" aria-label="domain map"></svg>
     <div class="hint">\u30CE\u30FC\u30C9\u3092\u30AF\u30EA\u30C3\u30AF\u3057\u3066\u8A73\u7D30\u3068\u691C\u8A3C\u6570\u5024\u3092\u8868\u793A \u00B7 \u8272\u306F\u7CBE\u5EA6\uFF08\u7DD1=\u6A5F\u68B0\u7CBE\u5EA6 / \u6A59=O(h\u00B2)\uFF09</div>
     <div class="card" style="margin-top:14px">
       <h2>\u4F5C\u7528\u7D20\u306E\u8AAD\u307F\u66FF\u3048 (operator readings)</h2>
@@ -87,11 +87,11 @@ function el(tag,attrs={},txt){const e=document.createElementNS(NS,tag);for(const
 
 // ---- domain map ----
 const map=$("#map");
-const cx=280,cy=160,R=140;
+const cx=280,cy=250,R=165;
 const colorByPrec=p=> p==="exact"?"var(--exact)": p==="O(h\u00B2)"?"var(--oh2)": p&&p.indexOf("div-free")>=0?"var(--blue)":"var(--violet)";
 const pillClass=d=> d.precision==="exact"?"exact": d.precision==="O(h\u00B2)"?"oh2": d.id==="velocity"?"vel":"fuse";
 
-const angles=[ -140, -40, 40, 140 ].map(a=>a*Math.PI/180);
+const angles = MODEL.domains.map((_,i)=> (-Math.PI/2) + i*(2*Math.PI/MODEL.domains.length));
 MODEL.domains.forEach((d,i)=>{
   const ax=cx+R*Math.cos(angles[i]), ay=cy+R*Math.sin(angles[i]);
   map.appendChild(el("line",{class:"edge",x1:cx,y1:cy,x2:ax,y2:ay}));
