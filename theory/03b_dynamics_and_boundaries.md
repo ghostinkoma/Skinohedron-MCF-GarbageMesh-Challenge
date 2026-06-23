@@ -236,4 +236,4 @@ always visible), with:
 
 **Next (Step 2):** pressure on the same `L` — pressure as the scalar field whose
 Laplacian (this verified `L`) enforces `∇·u = 0`, with a closed tank as the first
-exact test (`04_pressure_tank.md`).
+exact test (realized as `04_pressure_field.md`).

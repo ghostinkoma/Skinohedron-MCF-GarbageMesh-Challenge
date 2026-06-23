@@ -137,7 +137,7 @@ Adopt the **thermal conductance network** (cotangent/FE) as the working operator
 and build Step 2 (pressure/tank) on it, since the incompressibility projection is
 a Laplace solve that this operator gets right. The material/`S`-parameter idea
 lives on as **per-edge conductivity**. Concretely, the next theory doc would be
-`theory/03_pressure_on_heat_operator.md`: pressure as the scalar field whose
+`theory/03_unified_scalar.md` (+ `04_pressure_field.md`): pressure as the scalar field whose
 Laplacian (the verified heat operator) enforces `∇·u = 0`, with a tank (closed
 domain) as the first exact test (eigenmodes / equilibration).
 
