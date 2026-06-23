@@ -35,8 +35,8 @@ const MODEL = {
     { id: "pressure", label: "Pressure  p", role: "incompressibility constraint (P0)",
       precision: "stabilised \u2192 benchmark-valid", color: "#34d399",
       fact: "PSPG cavity vs Ghia 1982 Re=100: u,v RMS 0.0095\u21920.0069 (n=48\u219264); pressure smooth",
-      detail: "Raw equal-order P1 pressure is inf-sup-unstable (06z). PSPG-stabilised, the lid-driven cavity matches the published Ghia benchmark on both centrelines (converging) with a SMOOTH pressure \u2014 validated against an EXTERNAL standard. The stabilisation is \u2212\u03C4K, the SAME operator K. Pressure is a correlation domain on L=M\u207B\u00B9K, in 2-D and 3-D alike. (Only Re=100 benchmarked; PSPG not a true inf-sup element.)",
-      script: "cavity_pspg_verify.py / cavity3d_demo.py", doc: "08" }
+      detail: "Raw equal-order P1 pressure is inf-sup-unstable (06z). PSPG-stabilised, the lid-driven cavity matches the published Ghia benchmark on both centrelines (converging) with a SMOOTH pressure \u2014 validated against an EXTERNAL standard. Cross-checked: Taylor-Hood P2-P1 (inf-sup-stable, NO parameter) independently matches Ghia, and agrees with PSPG to RMS 0.0015 \u2014 so the match is correct physics, not a \u03C4-tuning artifact. The stabilisation is \u2212\u03C4K, the SAME operator K. Pressure is a correlation domain on L=M\u207B\u00B9K, in 2-D and 3-D. (Only Re=100 so far.)",
+      script: "cavity_pspg_verify.py / cavity_taylorhood_verify.py / cavity3d_demo.py", doc: "08 / 08a" }
   ],
 
   // Readings of the one operator (operator identities)
