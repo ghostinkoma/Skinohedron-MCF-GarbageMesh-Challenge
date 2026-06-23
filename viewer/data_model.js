@@ -36,7 +36,13 @@ const MODEL = {
       precision: "stabilised → benchmark-valid", color: "#34d399",
       fact: "PSPG cavity vs Ghia 1982 Re=100: u,v RMS 0.0095→0.0069 (n=48→64); pressure smooth",
       detail: "Raw equal-order P1 pressure is inf-sup-unstable (06z). PSPG-stabilised, the lid-driven cavity matches the published Ghia benchmark on both centrelines (converging) with a SMOOTH pressure — validated against an EXTERNAL standard. Cross-checked: Taylor-Hood P2-P1 (inf-sup-stable, NO parameter) independently matches Ghia, and agrees with PSPG to RMS 0.0015 — so the match is correct physics, not a τ-tuning artifact. The stabilisation is −τK, the SAME operator K. Pressure is a correlation domain on L=M⁻¹K, in 2-D and 3-D. (Only Re=100 so far.)",
-      script: "cavity_pspg_verify.py / cavity_taylorhood_verify.py / cavity3d_demo.py", doc: "08 / 08a" }
+      script: "cavity_pspg_verify.py / cavity_taylorhood_verify.py / cavity3d_demo.py", doc: "08 / 08a" },
+
+    { id: "surface", label: "Surface tension  σκ", role: "interface force (5th domain)",
+      precision: "curvature O(h²) · MCF core", color: "#f472b6",
+      fact: "κn=−ΔX (Young-Laplace Δp=σκ); area-minimising; net force 0 (6.6e-16)",
+      detail: "A NEW domain heat/Coulomb CANNOT describe. It acts on the interface GEOMETRY (position X), not a scalar field: κn=−ΔX, the mean-curvature-flow core H=Δ_S x. Makes a pressure JUMP (Young-Laplace Δp=σκ, a discontinuity), MINIMISES area (ellipse→circle, area 6.32→3.81), free-boundary/nonlinear. The twist: it is the SAME Laplacian, applied to geometry not to a field. Curvature converges O(h²) (ratio 4.00). NOT yet coupled into NS (needs free-surface tracking — 12§4).",
+      script: "surface_tension_verify.py", doc: "13" }
   ],
 
   // Readings of the one operator (operator identities)
