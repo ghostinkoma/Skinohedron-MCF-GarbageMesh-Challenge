@@ -49,9 +49,9 @@ def _rot(seed):
 def graded_ball(shell_level=1):
     """Solid unit ball: geometric radial shells matched to angular spacing, each
     shell rotated to avoid radial alignment. Exact spherical boundary."""
-    Sv, _ = icosphere(shell_level)
+    Sv, Sf = icosphere(shell_level)
     Sv = Sv / np.linalg.norm(Sv, axis=1, keepdims=True)
-    hs = _surf_edge(*icosphere(shell_level))           # unit-sphere edge length
+    hs = _surf_edge(Sv, Sf)                            # unit-sphere edge length
     radii = [1.0]
     while radii[-1] / (1.0 + hs) > 0.5 * hs:
         radii.append(radii[-1] / (1.0 + hs))

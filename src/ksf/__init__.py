@@ -15,4 +15,4 @@ sph         : exact spherical-harmonic ground truth
 from . import mesh, dec, trace_free, sph   # noqa: F401
 
 __all__ = ["mesh", "dec", "trace_free", "sph"]
-__version__ = "1.0.0"
+__version__ = "2.0.0"

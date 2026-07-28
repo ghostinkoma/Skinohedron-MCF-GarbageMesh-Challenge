@@ -36,12 +36,14 @@ def fem_laplacian(V: np.ndarray, T: np.ndarray):
     n = len(V)
     rows, cols, vals = [], [], []
     M = np.zeros(n)
+    n_degenerate = 0
     for tet in T:
         ix = [int(i) for i in tet]
         P = V[ix]
         vol = abs(np.linalg.det(
             np.array([P[1] - P[0], P[2] - P[0], P[3] - P[0]]))) / 6.0
         if vol <= 1e-15:
+            n_degenerate += 1
             continue
         # P1 gradients: rows 1..3 of inv([1 x y z]) are the constant gradients
         C = np.linalg.inv(np.column_stack([np.ones(4), P]))
@@ -51,6 +53,13 @@ def fem_laplacian(V: np.ndarray, T: np.ndarray):
             M[ix[a]] += vol / 4.0
             for b in range(4):
                 rows.append(ix[a]); cols.append(ix[b]); vals.append(Ke[a, b])
+    if n_degenerate:
+        import warnings
+        warnings.warn(
+            f"fem_laplacian: {n_degenerate} degenerate tet(s) skipped (vol <= 1e-15); "
+            "assembled operator may be incomplete.",
+            stacklevel=2,
+        )
     K = coo_matrix((vals, (rows, cols)), shape=(n, n)).tocsr()
     return K, M
 

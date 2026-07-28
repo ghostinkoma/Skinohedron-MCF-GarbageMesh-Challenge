@@ -44,8 +44,7 @@ def solid_ball(shell_level: int = 1, n_shells: int = 3,
                   angular resolution).
     n_shells    : number of radial shells (more => denser radial resolution).
     """
-    Sv, _ = icosphere(shell_level)                 # unit-sphere surface verts
-    Sv = Sv / np.linalg.norm(Sv, axis=1, keepdims=True)
+    Sv, _ = icosphere(shell_level)                 # unit-sphere surface verts (already normalised)
 
     pts = [np.zeros((1, 3))]                        # centre
     for l in range(1, n_shells + 1):

@@ -134,7 +134,7 @@ def shape_regularity(V: np.ndarray, F: np.ndarray) -> dict:
 
 
 def vertex_normals(V: np.ndarray, F: np.ndarray) -> np.ndarray:
-    """Angle-weighted vertex normals (handy for the viewer / shading)."""
+    """Area-weighted vertex normals (handy for the viewer / shading)."""
     n = np.zeros_like(V)
     for a, b, c in F:
         fn = np.cross(V[b] - V[a], V[c] - V[a])

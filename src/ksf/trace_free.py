@@ -23,7 +23,6 @@ empirically and honestly in s6 against the exact spectrum.
 """
 from __future__ import annotations
 import numpy as np
-from .mesh import edges
 from .dec import _cot  # noqa: F401  (kept for parity with dec angle conventions)
 
 
