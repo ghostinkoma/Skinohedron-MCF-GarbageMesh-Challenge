@@ -64,8 +64,9 @@ is algebraically trivial on its own. The *earned* statement is that the velocity
 
 **Pressure `p`.** Once PSPG-stabilised, the lid-driven cavity matches the Ghia (1982)
 `Re=100` benchmark on both centrelines (`u,v` RMS `~7×10⁻³` at `n=64`, converging) with a
-smooth pressure (`08`). The stabilisation block is `−τK` — the **same operator** — so the
-pressure is a correlation domain on `L`, validated against an **external standard**, in
+smooth pressure (`08`). The stabilisation block is `−τK` — the same **kind** of P1
+Laplacian (assembled on 2-D triangles like the Kuhn-cube `K`, but a separate matrix) — so
+the pressure is a correlation domain on `L`, validated against an **external standard**, in
 2-D and 3-D alike. This closes the `06z` "pressure-not-trustworthy" gap (for `Re=100`).
 
 ---

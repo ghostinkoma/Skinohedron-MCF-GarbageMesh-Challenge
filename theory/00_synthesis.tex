@@ -73,7 +73,8 @@ cube's broken symmetry, inherited honestly everywhere downstream.
 
 \paragraph{Step 1.5 --- dynamics and boundaries.}
 Damping $M\ddot p = -Kp - \gamma M\dot p$ produces the predicted envelope
-($\gamma{=}0.5$ tail/head $0.101$ vs $0.092$; $\gamma{=}2 \to 10^{-4}$). A discrete
+(decay rate fitted to the oscillation peaks matches $\gamma/2$ to $0.08\%$ at
+$\gamma{=}0.5$ and $0.20\%$ at $\gamma{=}2$). A discrete
 dispersion cutoff appears at $f \approx 0.127$ cycles/step. Robin convection
 $q = h\,B\,(T-T_{\text{env}})$ gives half-life $\propto 1/h$ (the product
 $\text{half-life}\times h$ holds at $3077$--$3144$ across $h = 0.5\ldots8$, a
@@ -171,8 +172,8 @@ Mesh anisotropy (blemish) & --- & $\Delta c/c \approx 0.047$--$0.048$ & noted \\
 \begin{longtable}{@{}p{5.6cm}p{3.2cm}p{3.4cm}l@{}}
 \toprule
 claim & exact target & measured & status \\ \midrule \endhead
-Damped envelope $\gamma{=}0.5$ & $0.092$ & $0.101$ & PASS \\
-Damped envelope $\gamma{=}2.0$ & $\sim\!10^{-4}$ & $10^{-4}$ & PASS \\
+Damped envelope rate $\gamma{=}0.5$ & $\gamma/2{=}0.25$ & $0.2498$ ($0.08\%$) & PASS \\
+Damped envelope rate $\gamma{=}2.0$ & $\gamma/2{=}1.0$ & $1.0020$ ($0.20\%$) & PASS \\
 Dispersion cutoff & band $\sim0.13$ & $0.127$ cyc/step & PASS \\
 Robin half-life $\propto 1/h$ & const $\text{half}\cdot h$ & $3077$--$3144$ ($2.2\%$) & PASS \\
 Stefan--Boltzmann $T^4$ & steep cooling & many-fold faster & PASS \\

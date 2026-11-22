@@ -6,7 +6,8 @@ document is re-derived here from the same operator L = M^{-1} K on the Kuhn cube
 (n=8), with explicit PASS assertions. No claim without a runnable check.
 
 Checks:
-  A. Damped wave envelope:  gamma=0 persists; gamma>0 follows exp(-gamma t/2).
+  A. Damped wave envelope:  gamma=0 persists; gamma>0 follows exp(-gamma t/2)
+     (decay rate fitted from the oscillation peaks, within 3% of gamma/2).
   B. Dispersion cutoff:     f_cutoff = sqrt(lamMax)*dtWave/(2*pi) ~ 0.127 cyc/step,
                             and a sub-cutoff drive radiates while a super-cutoff
                             drive stays pinned (evanescent).
@@ -60,11 +61,22 @@ def check_A_damped_wave(m):
             p0, p1 = p1, p2
         amp = np.array(amp)
         ratio = amp[-20:].max() / amp[:20].max()
-        pred = np.exp(-gamma * dt * 400 / 2)
-        good = (abs(ratio - pred) < 0.05) if gamma > 0 else (ratio > 0.9)
+        # Envelope decay RATE from the oscillation peaks: fit log|c| at the local maxima
+        # of the mode amplitude against time and compare with gamma/2. (A tail/head
+        # ratio of 20-step window maxima is phase-dependent, because the mode period is
+        # ~84 steps; the earlier absolute test |ratio - pred| < 0.05 also accepted
+        # anything once pred was small.)
+        if gamma > 0:
+            pk = np.where((amp[1:-1] > amp[:-2]) & (amp[1:-1] >= amp[2:]))[0] + 1
+            rate = -np.polyfit(pk * dt, np.log(amp[pk]), 1)[0]
+            rel = abs(rate - gamma / 2) / (gamma / 2)
+            good = rel < 0.03
+            info = f"decay rate={rate:.4f} vs gamma/2={gamma/2:.4f} ({rel*100:.2f}%, {len(pk)} peaks)"
+        else:
+            good = ratio > 0.9
+            info = f"tail/head={ratio:.4f} (no decay expected)"
         ok = ok and good
-        print(f"    gamma={gamma:>3}: tail/head={ratio:7.4f}  predicted={pred:7.4f}  "
-              + ("ok" if good else "FAIL"))
+        print(f"    gamma={gamma:>3}: {info}  " + ("ok" if good else "FAIL"))
     assert ok, "damped-wave envelope mismatch"
     print("    PASS")
 

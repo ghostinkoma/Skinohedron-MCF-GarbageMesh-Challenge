@@ -48,7 +48,7 @@ cd Skinohedron-MCF-GarbageMesh-Challenge
 
 pip install -r requirements.txt
 
-# Run the full verification suite (all 6 sections, ~30 seconds)
+# Run the full verification suite (all 6 sections, ~2 minutes; machine-dependent)
 python3 src/verification/run_all.py
 
 # Open the interactive viewer (no server needed)
@@ -108,8 +108,10 @@ Skinohedron-MCF-GarbageMesh-Challenge/
 ├── tests/
 │   └── test_ksf.py             ← basic sanity tests (run with: python3 tests/test_ksf.py)
 │
-└── archive/
-    └── original_cpp/           ← original C++ prototype (Skinohedron.hpp, main.cop)
+└── archive/                    ← original C++ prototype
+    ├── README.md
+    ├── Skinohedron.hpp
+    └── main.cop
 ```
 
 ---

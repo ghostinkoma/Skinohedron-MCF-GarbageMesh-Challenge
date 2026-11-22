@@ -15,10 +15,11 @@ throughout (true unsteady transition is `~Re 8000`, far beyond here).
 | 400 | 0.0311 | 0.0139 |
 | 1000 | 0.0555 | 0.0265 |
 
-Both converge to the published benchmark. Taylor–Hood is markedly more accurate per node
-(its P2 velocity is the `06f` enrichment). `Re=1000` is genuinely harder — thinner
-boundary layers — so the error is larger but still shrinking under refinement, reported
-honestly rather than hidden.
+Both are close to the published benchmark at these resolutions (one mesh per element —
+this check does not refine; convergence under refinement is shown at `Re=100` in `08` /
+`08a`). Taylor–Hood is markedly more accurate per node (its P2 velocity is the `06f`
+enrichment). `Re=1000` is genuinely harder — thinner boundary layers — so the error is
+larger, reported honestly rather than hidden.
 
 ---
 
@@ -65,8 +66,8 @@ loosens). Both are measured, both are consistent with the literature.
 ## 4. What is and isn't claimed
 
 **Verified:**
-- Both PSPG and Taylor–Hood reproduce Ghia at `Re=400` and `Re=1000` (converging; TH more
-  accurate per node).
+- Both PSPG and Taylor–Hood are close to Ghia at `Re=400` and `Re=1000` at one resolution
+  each (TH more accurate per node); refinement at these Re is not tested here.
 - The two methods still agree (mutual RMS `0.006`/`0.016`), with agreement loosening as Re
   rises — the discretisation's strain made visible.
 - The physical rev is captured: secondary corner vortices grow with Re and the primary

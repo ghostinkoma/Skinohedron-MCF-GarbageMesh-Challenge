@@ -6,9 +6,11 @@ the Taylor-Hood elements, and looks for the "rev" -- the Reynolds-driven change 
 structure (secondary corner vortices) and the point where the discretisation starts to
 strain.
 
-  CHECK A  Both elements vs Ghia (1982) at Re=400 and Re=1000: centreline RMS converges
-           (TH, higher order, is more accurate per node). Re=1000 is harder (thin
-           boundary layers) -> larger error, honestly reported.
+  CHECK A  Both elements vs Ghia (1982) at Re=400 and Re=1000, at ONE resolution each
+           (PSPG n=64, Taylor-Hood n=32): centreline RMS is small (TH, higher order, is
+           more accurate per node). Re=1000 is harder (thin boundary layers) -> larger
+           error, honestly reported. Convergence under refinement is NOT tested here
+           (it is shown at Re=100 in cavity_pspg / cavity_taylorhood).
   CHECK B  Cross-check at higher Re: PSPG and Taylor-Hood still agree, but the agreement
            LOOSENS with Re (RMS 0.006 at Re=400 -> 0.016 at Re=1000) -- the numerical
            "rev": the scheme begins to strain.
@@ -51,7 +53,8 @@ def checkA_vs_ghia():
         yt, ut = th_centreline(32, Re)
         et = np.sqrt(np.mean((np.interp(GHIA_Y, yt, ut)-GHIA[Re])**2))
         print(f"    Re={Re}: PSPG(n64) RMS={ep:.4f}   Taylor-Hood(n32) RMS={et:.4f}")
-    print("    -> both converge to Ghia; TH more accurate per node; Re=1000 harder (bigger error).")
+    print("    -> both close to Ghia at this single resolution; TH more accurate per node;")
+    print("       Re=1000 harder (bigger error). (Refinement is not tested in this check.)")
     assert et < 0.05
     print("    PASS")
 
