@@ -85,7 +85,9 @@ coupled nonlinear stiffness may lose the machine-precision interface results.
 ## Cross-cutting (engineering, not physics)
 
 - **Viewer parity:** keep `viewer/viewer_model.html` and the per-stage viewers showing
-  *verified* numbers only (presets from solver output, no in-browser physics).
+  *verified* numbers only (presets from solver output, no in-browser physics). The
+  interactive/illustrative exceptions (`viewer_unified`, `viewer_sparam`, `viewer_pour`)
+  are listed in `STRUCTURE.md` and must say so on screen.
 - **Reproducibility:** the 20 verification scripts should remain a single re-runnable
   suite (the `06z` audit re-ran them all; keep that easy).
 - **Synthesis-drift guard:** any new `06x`/`07x` note must carry its scope caveats inline,

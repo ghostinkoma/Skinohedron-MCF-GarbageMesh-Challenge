@@ -7,7 +7,7 @@ const PRECISION = {
   // From fluid_highorder_accuracy_verify.py (06f). The route to machine precision
   // for a sinusoidal (field-intrinsic) mode: enrich K.
   enrichment: {
-    title: "高次化 (P1→P8): 剤性誤差→機械精度",
+    title: "高次化 (P1→P8): 剛性誤差→機械精度",
     source: "06f / fluid_highorder_accuracy_verify.py",
     xlabel: "局所次数", ylabel: "固有値誤差 (log)",
     points: [
@@ -20,9 +20,9 @@ const PRECISION = {
   // (1) refinement: stiffness O(h^2) error vs mesh n (the approximation part).
   // From fluid_highorder_accuracy_verify.py / fluid_ns_error_decomposition (06d/06f).
   refinement: {
-    title: "細分 (h→): 剤性誤差の O(h²) 収束",
+    title: "細分 (h→): 剛性誤差の O(h²) 収束",
     source: "06d/06f",
-    xlabel: "メッシュ n", ylabel: "剤性誤差 %",
+    xlabel: "メッシュ n", ylabel: "剛性誤差 %",
     points: [ {x:"8",err:5.04}, {x:"10",err:3.25}, {x:"12",err:2.26}, {x:"16",err:1.28} ]
   },
 
