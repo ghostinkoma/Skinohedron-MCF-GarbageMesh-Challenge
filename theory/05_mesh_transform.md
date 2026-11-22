@@ -258,6 +258,12 @@ lives — but the cotangent weight is load-bearing (it is what makes the operato
 negative conductances are an honest signature of moving vertices on a right-angle
 mesh, removable only by not moving them (topological) or by hard global remeshing.
 
+*(Note, added later: the flips cost the discrete **maximum principle**, not
+**convergence**. `stiffness_irregular_verify.py` solves a non-periodic Poisson problem
+on jittered Kuhn meshes with up to ~3×10⁴ sign-flipped weights and still gets the optimal
+Galerkin rates — `L²` `h^2.00`, `H¹` `h^0.99`, eigenvalue `h^1.96` — as Céa / Aubin–Nitsche /
+Babuška–Osborn predict for shape-regular meshes.)*
+
 ## 6. What is and isn't claimed
 
 **Verified (§5):**
