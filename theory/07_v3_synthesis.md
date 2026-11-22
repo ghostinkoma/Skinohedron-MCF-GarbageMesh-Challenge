@@ -41,9 +41,11 @@ solidly verified (the operator identities are exact and pressure-independent).
 V3's result is not a faster solver; it is a **map of how the physical domains sit on
 this one operator**, each with a *different and measured* error character:
 
-**Mass `M` (inertia).** Exact. The lumped-mass form `uᵀMu` equals the continuous
-integral at every resolution (`0.00%`, `06f`). The inertial domain carries **no**
-discretisation error.
+**Mass `M` (inertia).** Exact *for the Taylor–Green test*: the lumped-mass form `uᵀMu`
+equals the continuous integral at every resolution (`0.00%`, `06f`), because lumped
+mass on a uniform grid is the trapezoidal rule, exact for a whole-period sinusoid. For a
+generic smooth field it is `O(h²)` (`mass_quadrature_verify.py`). Within that test the
+inertial domain carries **no** discretisation error.
 
 **Coulomb / stiffness `K`.** `O(h²)` for smooth modes. `uᵀKu` under-resolves a
 sinusoid's gradient by `5.0→1.3%` (`n=8→16`, `06f`); the electrostatic `1/r` law is
@@ -85,7 +87,8 @@ precisely (the `06z` audit corrected an earlier over-simplification):
 
 And the **route past (3) to machine precision** is *local enrichment* — raising the
 element order (the verifiable form of "extend the simplex's local dimension, project the
-sum back"): in 1-D, `P1 2e-2 → P8 2e-13` (`06f`). Enrich `K`; leave `M` (already exact).
+sum back"): **in 1-D only**, `P1 2e-2 → P8 2e-13` (`06f`; 2-D/3-D not demonstrated).
+Enrich `K`; `M` is exact for this test but `O(h²)` in general.
 
 This is the spine of the whole arc: the inertial `e^{-νλt}` / `e^{iωt}` time-structure is
 exact (the scalar-wave structure, `06d`); the residual is purely the spatial `O(h²)` of
@@ -97,7 +100,7 @@ representing a sinusoid, removable by enrichment.
 
 **Earned (verified, reproducing, pressure-independent):**
 - the operator identities (§1) and the domain map's measured error split (§2);
-- the machine-precision rule (§3) including the enrichment route to `2e-13`;
+- the machine-precision rule (§3) including the enrichment route to `2e-13` (1-D only);
 - the velocity's divergence-freeness *and* its pressure-decoupling (`~10⁻⁴`);
 - the temperature fusion invariant (`0.0001%`) and the glue interface (`7.5e-16`).
 

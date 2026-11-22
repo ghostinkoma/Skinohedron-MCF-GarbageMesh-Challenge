@@ -37,11 +37,11 @@ illustrative encoding, labelled qualitative.
 A data viewer — **verified numbers only** — gathering the accuracy story as a summary of
 the rev investigation and the enrichment route. Five panels:
 
-- **Enrichment P1→P8** (`06f`): the field-intrinsic `(3)` sinusoid error falls spectrally
+- **Enrichment P1→P8** (`06f`, **1-D only**): the field-intrinsic `(3)` sinusoid error falls spectrally
   `2.3e-2 → 2.35e-13` by raising local order. *Yes, high-order really reaches machine
   precision.*
 - **Refinement `O(h²)`** (`06d`/`06f`): the approximation `(1)` error falls `5.0→1.3%`
-  with mesh; mass `M` is exact at every `n`.
+  with mesh; mass `M` is exact at every `n` for this test field (`O(h²)` in general).
 - **Real benchmark** (`08b`/`10`): Ghia `Re=1000` centreline RMS falls under both
   refinement (PSPG) and enrichment (Taylor–Hood, more accurate per node).
 - **Rev separation** (`10`, corrected via `08b`): the numerical rev shrinks (`(1)`). The

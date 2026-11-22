@@ -64,7 +64,7 @@ notebook proved long ago, to machine precision.
 
 With this, the three domains relate as the insight predicted:
 
-- **mass** `M` — inertia; exact in P1 (`06f`).
+- **mass** `M` — inertia; exact for the `06f` test field (trapezoidal-rule property), `O(h²)` in general.
 - **Coulomb** `K` — stiffness/viscosity; `O(h²)` for smooth modes, → machine precision
   by enrichment (`06f`); reproduces the electrostatic `1/r` (`06e`).
 - **temperature** `T` — both a **parallel** domain carrying its own conserved energy

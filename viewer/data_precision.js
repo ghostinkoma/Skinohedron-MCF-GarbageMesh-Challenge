@@ -9,7 +9,7 @@ const PRECISION = {
   // From an unpublished script (06f). The route to machine precision
   // for a sinusoidal (field-intrinsic) mode: enrich K.
   enrichment: {
-    title: "高次化 (P1→P8): 剛性誤差→機械精度",
+    title: "高次化 (P1→P8, 1次元のみ): 剛性誤差→機械精度",
     source: "06f / 出典スクリプト未公開（再現不可）",
     xlabel: "局所次数", ylabel: "固有値誤差 (log)",
     points: [
@@ -28,8 +28,9 @@ const PRECISION = {
     points: [ {x:"8",err:5.04}, {x:"10",err:3.25}, {x:"12",err:2.26}, {x:"16",err:1.28} ]
   },
 
-  // mass domain: exact at every n (for contrast: enrich K, keep M).
-  massExact: { label:"質量 M (集中)", values:[
+  // mass domain: exact at every n FOR THIS TEST FIELD (whole-period sinusoid on a uniform
+  // mesh -> trapezoidal-rule exactness); O(h^2) in general (mass_quadrature_verify.py).
+  massExact: { label:"質量 M (集中・このテスト関数では厳密)", values:[
       {x:"8",err:0.0},{x:"10",err:0.0},{x:"12",err:0.0},{x:"16",err:0.0} ], source:"06f" },
 
   // (1)+(3) combined on a real benchmark: cavity Ghia error vs resolution at Re=1000.
@@ -58,8 +59,8 @@ const PRECISION = {
 
   summary: [
     "(1) 近似誤差: 細分で O(h²) 収束 (5.0→1.3%)",
-    "(3) 場固有: 高次化で機械精度 (P1 2e-2 → P8 2e-13)（出典スクリプト未公開）",
-    "質量 M は常に厳密 — K を豊かに、M はそのまま",
+    "(3) 場固有: 高次化で機械精度 (P1 2e-2 → P8 2e-13、1次元のみ)（出典スクリプト未公開）",
+    "質量 M はこのテスト関数（一様メッシュ上の周期正弦波）では厳密。一般の場では O(h²)",
     "実ベンチマークでも細分・高次化で Ghia 誤差が減る"
   ],
 

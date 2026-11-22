@@ -66,11 +66,11 @@ Stated honestly, to avoid overclaiming:
 - **It does NOT mean** the temperature domain reduces the `O(h²)` error of the
   velocity's *sinusoidal* modes (or vice versa). Each domain still has its own `O(h²)`
   for non-P1 fields. The route that lifts the smooth-mode accuracy of **all** fused
-  domains together is the **local enrichment** of `06f` (P1→P8 → machine precision),
+  domains together is the **local enrichment** of `06f` (P1→P8 → machine precision, shown in 1-D only),
   applied to the shared stiffness operator.
 
 So the picture is: **fusion adds exact invariants (this note); enrichment lifts smooth
-accuracy (`06f`); the mass domain is already exact (`06f`).** Together they are the
+accuracy (`06f`, 1-D only); the mass domain is exact for the `06f` test field (`O(h²)` in general).** Together they are the
 program the insight predicted — every domain on the one operator, summed, each
 contributing structure, all liftable to machine precision by enriching the shared `K`.
 
