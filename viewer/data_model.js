@@ -10,8 +10,8 @@ const MODEL = {
   domains: [
     { id: "mass", label: "Mass  M", role: "inertia",
       precision: "exact", color: "#2dd4bf",
-      fact: "uᵀM u = 0.2500 at every n (0.00% error)",
-      detail: "The lumped-mass form equals the continuous integral exactly, at all resolutions. The inertial domain carries NO discretisation error.",
+      fact: "uᵀM u = 0.2500 at every n (0.00% error) — for the periodic sinusoid test",
+      detail: "For the periodic sinusoidal test field on the uniform Kuhn mesh, the lumped-mass form equals the continuous integral at all resolutions (the trapezoidal rule is exact for such trigonometric integrands). This is a property of that test, not of lumped mass in general: on non-periodic problems or irregular meshes lumped mass carries O(h²) error and affects dispersion.",
       script: "fluid_highorder_accuracy_verify.py", doc: "06f" },
 
     { id: "coulomb", label: "Coulomb  K", role: "stiffness / viscosity / electrostatics",
@@ -35,7 +35,7 @@ const MODEL = {
     { id: "pressure", label: "Pressure  p", role: "incompressibility constraint (P0)",
       precision: "stabilised → benchmark-valid", color: "#34d399",
       fact: "PSPG cavity vs Ghia 1982 Re=100: u,v RMS 0.0095→0.0069 (n=48→64); pressure smooth",
-      detail: "Raw equal-order P1 pressure is inf-sup-unstable (06z). PSPG-stabilised, the lid-driven cavity matches the published Ghia benchmark on both centrelines (converging) with a SMOOTH pressure — validated against an EXTERNAL standard. Cross-checked: Taylor-Hood P2-P1 (inf-sup-stable, NO parameter) independently matches Ghia, and agrees with PSPG to RMS 0.0015 — so the match is correct physics, not a τ-tuning artifact. The stabilisation is −τK, the SAME operator K. Pressure is a correlation domain on L=M⁻¹K, in 2-D and 3-D. (Only Re=100 so far.)",
+      detail: "Raw equal-order P1 pressure is inf-sup-unstable (06z). PSPG-stabilised, the lid-driven cavity matches the published Ghia benchmark on both centrelines (converging) with a SMOOTH pressure — validated against an EXTERNAL standard. Cross-checked: Taylor-Hood P2-P1 (inf-sup-stable, NO parameter) independently matches Ghia, and agrees with PSPG to RMS 0.0015 — so the match is correct physics, not a τ-tuning artifact. The stabilisation is −τK, the SAME operator K. Pressure is a correlation domain on L=M⁻¹K, in 2-D and 3-D. Re=400 and Re=1000 also match Ghia with both elements (08b); the corner-eddy strengths are still under-resolved at these meshes.",
       script: "cavity_pspg_verify.py / cavity_taylorhood_verify.py / cavity3d_demo.py", doc: "08 / 08a" },
 
     { id: "surface", label: "Surface tension  σκ", role: "interface force (5th domain)",
@@ -72,13 +72,13 @@ const MODEL = {
   // Honest scope (from 06z audit)
   earned: [
     "operator identities (heat/wave/pressure/Coulomb) — exact, pressure-independent",
-    "domain error split: mass exact, Coulomb O(h²), enrichment → 2e-13",
+    "domain error split: mass exact (periodic sinusoid test), Coulomb O(h²), enrichment → 2e-13 (1-D)",
     "velocity divergence-free AND pressure-decoupled (~1e-4)",
     "temperature fusion invariant (0.0001%) and glue interface (7.5e-16)"
   ],
   notEarned: [
     "‖Bu‖~1e-16 alone is an algebraic triviality — not a quality result",
-    "RAW equal-order P1 pressure is checkerboard; STABILISED (PSPG) it matches Ghia Re=100 — but only Re=100, and PSPG is not a true inf-sup element",
+    "RAW equal-order P1 pressure is checkerboard; STABILISED (PSPG) it matches Ghia at Re=100/400/1000 and agrees with inf-sup-stable Taylor–Hood — but PSPG is a stabilisation, not a true inf-sup element, and this is validated on the 2-D cavity only",
     "cavity now validates the foundation; cylinder / turbulence / time-dependence still untested",
     "the unifying narrative is interpretation on idealised tests — wider than the proof",
     "no first-principles ν from molecular Coulomb (Green–Kubo/MD out of scope)"
@@ -86,11 +86,11 @@ const MODEL = {
 
   // vs state-of-the-art (so the position is not overstated)
   sota: [
-    "SOTA has inf-sup-stable pressure (Taylor–Hood / PSPG); here pressure is unreliable",
+    "SOTA uses stable pressure (inf-sup pairs / stabilisation) everywhere; here stable pressure (PSPG, Taylor–Hood) is validated on the 2-D cavity only",
     "SOTA reaches high order in 3-D; here P1 (high order shown in 1-D only)",
     "SOTA does turbulence (DNS/LES/RANS); here moderate-Re laminar",
     "SOTA uses adaptive unstructured meshes; here structured Kuhn cube n=8–16",
     "SOTA runs at 10⁶–10⁹ DOF on HPC/GPU; here small, direct solvers",
-    "SOTA is validated against experiments/benchmarks; here analytic solutions only"
+    "SOTA is validated against experiments and many benchmarks; here analytic solutions plus one benchmark (Ghia lid-driven cavity, Re=100–1000)"
   ]
 };

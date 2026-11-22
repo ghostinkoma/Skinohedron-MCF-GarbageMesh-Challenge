@@ -61,7 +61,8 @@ not the operator's.
 whole arc: heatmap field on the mesh, wave/heat modes, frequency + damping,
 environment (water / air / vacuum-radiation) + temperature + exchange rate,
 hold-to-excite interaction, slice, transparency, and the complete tetrahedral
-wireframe.
+wireframe. It time-steps the exported, verified operator in the browser (Float32), so
+its trajectories are interactive, not verified presets (see `STRUCTURE.md`).
 
 ## Next
 

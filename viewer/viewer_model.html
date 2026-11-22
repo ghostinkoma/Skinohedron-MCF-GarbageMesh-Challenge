@@ -155,7 +155,7 @@ function showEnrich(){
     return `<tr><td class="mono">${e.order}</td><td class="mono">${e.err.toExponential(2)}</td>
       <td style="width:55%"><div class="bar" style="width:${w}%"></div></td></tr>`;
   }).join("");
-  pane.innerHTML=`<div class="card"><h2>局所高次化で剤性誤差→機械精度 (1-D, 検証済)</h2>
+  pane.innerHTML=`<div class="card"><h2>局所高次化で剛性誤差→機械精度 (1-D, 検証済)</h2>
     <table><tr><th>次数</th><th>固有値誤差</th><th>バー(log)</th></tr>${rows}</table>
     <div class="hint" style="margin-top:8px">「次元拡張→射影」の検証可能な形：sinはP1に入らないthat、十分豊かな局所空間（P8）で機械精度。Kを豊かに、Mはそのまま。</div>
     <div class="src">script: <span class="mono">fluid_highorder_accuracy_verify.py</span> &middot; doc: 06f</div></div>`;

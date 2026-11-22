@@ -48,8 +48,17 @@ conserved invariant, or an external benchmark. Demonstrations (not benchmarks) e
 **Viewer-export scripts** — `src/verification3d/export_<topic>_viewer.py`: produce a
 `viewer/data_<topic>.js` of *verified* solver output.
 
-**Viewers** — `viewer/viewer_<topic>.html` + `viewer/data_<topic>.js`. No physics runs in
-the browser; viewers render verified presets only. All viewers are responsive (a unified
+**Viewers** — `viewer/viewer_<topic>.html` + `viewer/data_<topic>.js`. By default no
+physics runs in the browser: viewers render verified presets (solver output) only.
+**Declared exceptions** (each says so on screen):
+- `viewer_unified.html` — *interactive instrument*: time-steps the exported, verified
+  operator (`K`, lumped `M` from `data_unified.js`) in Float32 in the browser. The
+  operator is verified; the browser trajectories are not presets.
+- `viewer_sparam.html` — *illustrative*: a simplified GPU scatter update on the Kuhn
+  mesh (`data_sparam.js` holds geometry/adjacency only). The verified S-parameter engine
+  is `src/ksf3d/sparam_wave.py` / `sparam_wave_verify.py`.
+- `viewer_pour.html` — *illustrative* GLSL stream-function encoding (`theory/11`).
+A new viewer that computes in the browser must be added to this list and labelled. All viewers are responsive (a unified
 `@media (max-width:760px)` block; container pattern `#wrap` flex + `#side`/`#sidebar` +
 `#stage`).
 
