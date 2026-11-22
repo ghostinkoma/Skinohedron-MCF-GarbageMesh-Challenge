@@ -48,15 +48,53 @@ This is the deep reason, and it is pure differential geometry:
   its faces are glued. So the torus admits a **topological** realisation that is
   geometrically exact — `L` is the verified operator, unchanged.
 
-- The **sphere has positive curvature**. By Gauss's *Theorema Egregium*, curvature
-  is intrinsic: **no distortion-free map exists** from a flat mesh to a curved
-  sphere. Any cube→sphere realisation is necessarily **geometric** and must
-  distort tetrahedra. There is no "free" topological sphere the way there is a
-  free topological torus.
+- The **ball is a different story — and the obstruction is at the boundary, not
+  in the interior.** The target here is the solid 3-ball, which (like the cube) is
+  a **flat** region of ℝ³: its interior metric is Euclidean, so there is no
+  interior curvature to obstruct anything. Topologically the cube already *is* a
+  ball (they are homeomorphic) — no gluing is needed, and none would help. What
+  differs is the **shape of the boundary**, and that is what forces distortion:
 
-So the two shapes sit on opposite sides of the V2.5 axis *by their geometry*:
-torus = topological (exact), sphere = geometric (distortion unavoidable). That is
-itself a result worth recording.
+  1. **Edges and corners (the decisive local reason).** Along the cube's 12 edges
+     the interior dihedral angle is `90°`; on the round sphere every boundary
+     point is smooth (locally a half-space, `180°`). Any map taking the cube's
+     boundary onto the sphere must open these angles from `90°` to `180°`, so the
+     tetrahedra touching the edges (and, more strongly, the 8 corners, solid
+     angle `π/2` → `2π`) must be distorted. This is local, and no cleverer map
+     avoids it.
+  2. **No conformal (angle-preserving) map exists either.** By **Liouville's
+     theorem**, every conformal map between domains in ℝ³ (C¹ or better) is the
+     restriction of a Möbius transformation, which preserves angles — including
+     the `90°` dihedral angles at the edges. The image boundary would therefore
+     still have `90°` creases, but a sphere has none. So even the weaker goal of
+     preserving *shapes* (not just sizes) is impossible: some tetrahedra must
+     change shape. (In 2-D, by contrast, the Riemann mapping theorem *does* give
+     a conformal square→disc map; the 3-D rigidity is what bites here.)
+  3. **Where Gauss's *Theorema Egregium* actually applies.** The Egregium is a
+     statement about **surfaces**, so it applies to the **boundary**: the cube's
+     surface has zero Gaussian curvature on its faces, with all curvature
+     concentrated at the 8 corners (angle defect `π/2` each), while the sphere
+     has curvature spread uniformly at `1/R²`. Gauss–Bonnet makes the totals
+     agree (`4π`), but the distributions differ, so the boundary surface cannot
+     be mapped onto the sphere isometrically. It does **not** apply to the solid
+     cube→ball map as a whole, since both solids are flat.
+
+  Any cube→ball realisation of *this* mesh is therefore necessarily
+  **geometric** and must distort tetrahedra, most severely near the cube's edges
+  and corners. This is an obstruction to **re-using the structured cube mesh**,
+  not to meshing a ball well: a purpose-built tetrahedralisation of the ball can
+  have good quality (see §6, *Not claimed*).
+
+- *Note on the wrapped torus.* The solid torus embedded in ℝ³ is also flat in its
+  interior; the quality loss of the geometric (wrapped) torus comes from bending a
+  box into a ring (the inner rim is compressed and the outer rim stretched), not
+  from intrinsic curvature. The exact torus realisation is the **flat 3-torus**
+  `T³ = ℝ³/ℤ³` obtained by gluing, which is not embedded in ℝ³ at all.
+
+So the two shapes sit on opposite sides of the V2.5 axis: torus = topological
+(exact, via the flat 3-torus), ball = geometric (distortion unavoidable when the
+cube mesh is reused, because of the boundary's edges and corners). That is itself
+a result worth recording.
 
 ---
 
@@ -113,7 +151,7 @@ and measure what happens to the verified operator:
 | shape | topological | geometric |
 |-------|-------------|-----------|
 | **torus** | periodic box: `q` unchanged, `L` exact, spectrum periodic | wrapped ring: `q` drops, `L` anisotropy grows |
-| **sphere** | *does not exist* (Theorema Egregium) | cube→ball: `q` drops (probe: 0.657→0.028), measure `L` |
+| **sphere** (ball) | *not applicable*: the cube is already topologically a ball; the obstruction is the boundary's edges/corners (§1) | cube→ball: `q` drops (probe: 0.657→0.028), measure `L` |
 
 The headline comparison is the torus: the **same physics** (heat, wave, pressure)
 run on the flat-torus mesh (exact `L`) versus a geometrically wrapped torus
@@ -154,10 +192,13 @@ Run on the Kuhn cube `n=8` (729 vertices, 3072 tets):
    off-diagonal `K`), breaking the discrete maximum principle; gluing creates
    **none**. This is the quantified cost of geometry vs relabelling. **PASS.**
 
-4. **Sphere obstruction is real.** Across several cube→sphere maps the best
-   achievable `q_min` is `0.224` — well below the baseline `0.657`; none restores
-   quality. The Theorema-Egregium obstruction is concrete: distortion is forced,
-   not a bad-map artefact. **PASS.**
+4. **Sphere obstruction is observed.** Across the cube→ball maps tried, the best
+   `q_min` is `0.224` — well below the baseline `0.657`; none restores quality.
+   This is **empirical support, not a proof**. What establishes that the
+   distortion is forced (rather than a bad-map artefact) is the boundary
+   argument of §1: the edges and corners must open from `90°` to a smooth sphere,
+   and Liouville's theorem rules out a conformal map. No sharp lower bound on the
+   achievable `q_min` is derived here. **PASS.**
 
 5. **Physics still solves on the degraded mesh.** On the geometric ball, heat
    energy decreases monotonically (`1.09e-3 → 8.09e-4`) and the wave leapfrog
@@ -222,12 +263,16 @@ mesh, removable only by not moving them (topological) or by hard global remeshin
   sign-flipped cotangents); geometric deformation (moving vertices) degrades it
   (q_min 0.657→~0.015, thousands of sign-flipped cotangents).
 - The torus admits an exact (flat, topological) realisation (verified periodic
-  spectrum, 6-fold degeneracy, seamless degree-15 wrap); the sphere does not — a
-  curvature obstruction (Theorema Egregium), shown concrete (best q_min 0.224).
+  spectrum, 6-fold degeneracy, seamless degree-15 wrap); the ball does not when
+  the cube mesh is reused — a boundary obstruction (the cube's `90°` edges and
+  corners must open to a smooth sphere; by Liouville's theorem no conformal map
+  exists; the Egregium applies only to the boundary surface), observed
+  numerically (best q_min 0.224 among the maps tried).
 
 **Not claimed:**
 - No new mathematics: periodic boundary conditions, the cotangent Laplacian's
-  shape dependence, and the curvature obstruction are classical. The contribution
+  shape dependence, and the boundary obstruction (Liouville's theorem, the
+  Egregium for the boundary surface) are classical. The contribution
   is to *measure*, on this project's own `L`, the exact cost of each deformation.
 - V2.5 reshapes the **existing cube mesh**; it does not build optimal
   torus/sphere meshes. A purpose-built spherical tetrahedralisation (higher `q`)
