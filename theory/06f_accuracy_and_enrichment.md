@@ -2,7 +2,7 @@
 
 > **Known theory.** the stiffness `O(h²)` is Céa's lemma + interpolation; the eigenvalue `O(h²)` is Babuška–Osborn; the lumped-mass exactness is the trapezoidal rule on trigonometric polynomials; the P1→P8 behaviour is the `p`-version convergence of Babuška–Suri. See `theory/README.md`, *Where the results sit in known theory*, for references.
 
-**Status:** **verified** by `fluid_highorder_accuracy_verify.py`, **which is not published in this repository** (see `theory/README.md`, *Unpublished*); the numbers below cannot be regenerated from here.
+**Status:** **verified**, `src/verification3d/fluid_highorder_accuracy_verify.py` (reconstructed 2026-11: the original was never committed; the reconstruction reproduces the tables below to the printed digits, P8 at the round-off level).
 Two questions, answered together: (1) with **mass** and **Coulomb/stiffness**
 considered as separate domains, how accurate is the current scheme and *where* is the
 error? (2) If the two domains are genuinely different, can **extending the simplex's
@@ -143,7 +143,7 @@ exact here); in general it is `O(h²)` too and would be enriched consistently wi
 ## 6. Files
 
 - Theory: this note, on `06d`/`06e`.
-- Verification: `fluid_highorder_accuracy_verify.py` (checks A–B) — **unpublished**, not in this repository.
+- Verification: `src/verification3d/fluid_highorder_accuracy_verify.py` (checks A–B; reconstructed 2026-11, ~6 s).
 - Scope of the mass-exactness: `src/verification3d/mass_quadrature_verify.py` (checks A–C, published).
 - Implied future engine: a 3-D `Pn` (high-order) stiffness assembly to carry the cube
   benchmark from `~1%` to machine precision — classical, and outside the current P1

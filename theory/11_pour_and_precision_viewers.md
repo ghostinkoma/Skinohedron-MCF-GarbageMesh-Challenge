@@ -20,7 +20,7 @@ A GLSL (WebGL) viewer of the secondary vortices that appear when water is poured
 - **The physical point (verified in `10`):** the **round cup has no corners**, so no
   Moffatt corner eddies form — only the smooth central primary vortex. The **square masu
   has four corners**, so counter-rotating Moffatt eddies appear there, and they
-  **strengthen with Re** (exactly the `α`-scaling mechanism of `10 §3`: corner vortices
+  **strengthen with Re** (exactly the `α`-scaling mechanism of `10 §4`: corner vortices
   grow as nonlinear advection turns on). The viewer encodes this: `shape=cup` zeroes the
   corner term; `shape=masu` adds decaying corner oscillations whose amplitude rises with
   Re.
