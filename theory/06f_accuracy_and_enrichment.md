@@ -1,6 +1,6 @@
 # 06f · Current Accuracy, and Reaching Machine Precision by Local Enrichment
 
-**Status:** **verified**, `src/verification3d/fluid_highorder_accuracy_verify.py`.
+**Status:** **verified** by `fluid_highorder_accuracy_verify.py`, **which is not published in this repository** (see `theory/README.md`, *Unpublished*); the numbers below cannot be regenerated from here.
 Two questions, answered together: (1) with **mass** and **Coulomb/stiffness**
 considered as separate domains, how accurate is the current scheme and *where* is the
 error? (2) If the two domains are genuinely different, can **extending the simplex's
@@ -127,7 +127,7 @@ domains being different is exactly what makes this clean: enrich `K`, keep `M`.
 ## 6. Files
 
 - Theory: this note, on `06d`/`06e`.
-- Verification: `src/verification3d/fluid_highorder_accuracy_verify.py` (checks A–B).
+- Verification: `fluid_highorder_accuracy_verify.py` (checks A–B) — **unpublished**, not in this repository.
 - Implied future engine: a 3-D `Pn` (high-order) stiffness assembly to carry the cube
   benchmark from `~1%` to machine precision — classical, and outside the current P1
   notebook.

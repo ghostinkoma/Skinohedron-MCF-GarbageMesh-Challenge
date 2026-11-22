@@ -40,7 +40,7 @@
 <body>
 <header>
   <h1>精度は本当に上がるか — (1)細分 + (3)高次化</h1>
-  <div class="sub">レブ調査（10）のまとめ。表示数値はすべて検証スクリプト出力（ブラウザ内計算なし）。</div>
+  <div class="sub">精度改善の調査のまとめ。表示数値は検証スクリプトの出力（ブラウザ内計算なし）。一部は出典スクリプトが未公開で再現できない（各パネルの出典に「未公開」と表示）。</div>
 </header>
 <div id="wrap">
   <div id="side">
@@ -100,7 +100,7 @@ const V={
   cavity(){const e=PRECISION.cavity;return card(e.title,e.source,
      logChart(e.pspg,'err','amber','blue',e.th),
      `<span class="leg"><span><span class="dot" style="background:var(--amber)"></span>PSPG (P1細分)</span><span><span class="dot" style="background:var(--blue)"></span>Taylor-Hood (P2高次)</span></span><br>実ベンチマーク（Ghia Re=1000）でも、細分と高次化で誤差が減る。TH（高次＝高次化）は少ない節点で高精度。`);},
-  rev(){const r=PRECISION.revSeparation;return card("レブの分離：数値(1) vs 物理(3)","10 / 08b",
+  rev(){const r=PRECISION.revSeparation;return card("レブの分離：数値(1) vs 物理(3)","08b（数値のレブの系列は出典スクリプト未公開）",
      logChart(r.numerical.points,'err','amber','blue',r.physical.points),
      `<span class="leg"><span><span class="dot" style="background:var(--amber)"></span>${r.numerical.label}</span><span><span class="dot" style="background:var(--blue)"></span>${r.physical.label}</span></span><br>
       数値のレブは細分で <b>減る</b>（(1)近似）。物理のレブ（右下二次渦の流れ関数 ψ）は細分で <b>まだ増加中</b>（Ghia 1.75e-3 の 55→67→74%）で、一定値への収束は未確認。<br><span class="note">訂正: 以前の「収束」は u_min による代理量で、主渦の戻り流れを測っていた（issue #3 A3）。</span>`);},
@@ -111,7 +111,7 @@ const V={
       <b>${r.compose.label}</b>（上図）: ${r.compose.note}`);},
   summary(){let li=PRECISION.summary.map(s=>`<li>${s}</li>`).join("");
     return `<div class="card"><h2>まとめ — 精度は本当に上がる</h2>
-      <div class="src">06d / 06f / 08b / 10 / 12</div><ul>${li}</ul>
+      <div class="src">06f / 08b / 12（一部の出典スクリプトは未公開）</div><ul>${li}</ul>
       <div class="note">「高次化すれば本当に精度が上がるか」→ 上がる。ただし上がるのは近似誤差(1)。場固有(3)の構造自体は残る（それが正しい物理）。予想(2)(4)は機械NSの残差を埋める別ドメイン/反応項として検証され、(1)と合成できる。</div></div>`;}
 };
 function card(title,source,chart,note){
