@@ -1,5 +1,7 @@
 # 07 · V3 Synthesis — One Operator, Four Domains, Honestly Bounded
 
+> **Reading guide.** This note mixes verified numbers with interpretation. See `theory/README.md`, *How to read the claims*, for which results are implementation checks [I], approximation-accuracy results [A], and interpretation [N]. "Coulomb" as a name for the stiffness `K` means *the shared Laplacian*, not that viscosity is electrostatic.
+
 This integrates the V3 fluid-dynamics arc (`06`–`06h`) and its audit (`06z`). It states
 what was built, how the pieces fit into a single structure, and — kept deliberately in
 view — exactly where the verified facts end and interpretation or future work begins.
@@ -47,7 +49,7 @@ mass on a uniform grid is the trapezoidal rule, exact for a whole-period sinusoi
 generic smooth field it is `O(h²)` (`mass_quadrature_verify.py`). Within that test the
 inertial domain carries **no** discretisation error.
 
-**Coulomb / stiffness `K`.** `O(h²)` for smooth modes. `uᵀKu` under-resolves a
+**Coulomb / stiffness `K`** *(read: stiffness `K`, the shared Laplacian — the name "Coulomb" is an analogy, see `README.md`)*. `O(h²)` for smooth modes. `uᵀKu` under-resolves a
 sinusoid's gradient by `5.0→1.3%` (`n=8→16`, `06f`); the electrostatic `1/r` law is
 recovered to `0.8%` (`06e`). **All** the smooth-mode error lives here, not in the mass.
 

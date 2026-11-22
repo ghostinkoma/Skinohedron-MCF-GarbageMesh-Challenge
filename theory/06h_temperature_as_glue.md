@@ -1,5 +1,7 @@
 # 06h · Temperature as the Glue — Mediating Coulomb and Mass
 
+> **Reading guide.** This note mixes verified numbers with interpretation. See `theory/README.md`, *How to read the claims*, for which results are implementation checks [I], approximation-accuracy results [A], and interpretation [N]. "Coulomb" as a name for the stiffness `K` means *the shared Laplacian*, not that viscosity is electrostatic.
+
 **Status:** theory + **verification (PASS)**, `src/verification3d/thermal_glue_verify.py`.
 A stronger role for temperature than the parallel fusion of `06g`. There, temperature
 was an additive domain (its energy summed with the kinetic). Here it is the
