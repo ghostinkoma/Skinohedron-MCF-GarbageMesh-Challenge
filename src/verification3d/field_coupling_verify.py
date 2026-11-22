@@ -1,5 +1,5 @@
 """
-field_coupling_verify.py  --  gravity as a field on the same operator, and field-driven NS
+field_coupling_verify.py  --  gravity as a field on the same operator (body-force scale)
 
 A deliberately CONSERVATIVE verification of operator structure only. Extends 06e (Coulomb):
 gravity is the same Poisson operator, and the field enters NS as a body force. What is
