@@ -41,20 +41,40 @@ in the data, that more resolution or higher order is needed before pushing furth
 
 ## 3. The physical "rev" — corner vortices and centre migration
 
-The Reynolds-driven structural change is real and captured by both elements:
+> **Correction (issue #3, A3).** An earlier version of this section measured the
+> "bottom-right corner vortex" as the minimum of `u` in the window `x>0.8, y<0.2`
+> (`−0.0705 → −0.1413`). That minimum lies on the window edge (e.g. `(0.81, 0.19)`) and is
+> the **primary vortex's return flow** along the floor, not the secondary eddy, whose
+> near-wall `u` is positive. The section below uses the stream function instead.
 
-| Re | bottom-right reverse flow `u_min` | bottom-left `u_max` | primary-vortex centre |
-|----|------|------|------|
-| 400 | −0.0705 | +0.0003 | (0.56, 0.60) |
-| 1000 | −0.1413 | +0.0030 | (0.53, 0.56) |
+The structure is now measured with the **stream function** `ψ` of the PSPG solution
+(`K ψ = ∫φ(∂v/∂x − ∂u/∂y)`, `ψ = 0` on the walls, `u = ∂ψ/∂y`, `v = −∂ψ/∂x` as in Ghia):
+the primary vortex is `min ψ < 0`; the bottom-right (BR) and bottom-left (BL) secondary
+eddies are `max ψ > 0` (counter-rotating) in each bottom corner. Reference: Ghia, Ghia &
+Shin (1982), Table V.
 
-- **Secondary corner vortices grow with Re:** the bottom-right reverse flow roughly
-  **doubles** (`−0.07 → −0.14`) and the bottom-left vortex strengthens ~`10×`. This is the
-  emergence of the well-known Ghia secondary vortices — weak at `Re=400`, clear at
-  `Re=1000`.
-- **The primary vortex centre migrates toward the geometric centre:** `(0.56,0.60) →
-  (0.53,0.56)`, matching Ghia's published centres `(0.5547,0.6055)` and `(0.5313,0.5625)`
-  to two digits. This migration *is* the canonical cavity "rev".
+| Re | n | primary `ψ` (centre) | BR eddy `ψ` (location) | BL eddy `ψ` (location) |
+|----|---|------|------|------|
+| 400 | 128 | `−0.1058` (0.562, 0.609) | `4.73e-4` (0.891, 0.117) | `2.8e-6` (0.039, 0.039) |
+| 400 | Ghia | `−0.1139` (0.5547, 0.6055) | `6.42e-4` (0.8906, 0.1250) | `1.42e-5` (0.0508, 0.0469) |
+| 1000 | 64 | `−0.0891` (0.547, 0.578) | `9.59e-4` (0.875, 0.109) | `5.8e-5` (0.078, 0.062) |
+| 1000 | 96 | `−0.0966` (0.542, 0.573) | `1.18e-3` (0.875, 0.115) | `1.04e-4` (0.073, 0.073) |
+| 1000 | 128 | `−0.1011` (0.531, 0.570) | `1.30e-3` (0.867, 0.109) | `1.31e-4` (0.078, 0.070) |
+| 1000 | Ghia | `−0.1179` (0.5313, 0.5625) | `1.75e-3` (0.8594, 0.1094) | `2.31e-4` (0.0859, 0.0781) |
+
+- **The secondary eddies are where Ghia puts them, and they counter-rotate.** At `n=128`
+  the BR eddy lies within `0.01` of Ghia's location at both Re; the BL eddy is close at
+  `Re=1000` and barely resolved at `Re=400`.
+- **They grow with Re:** BR `×2.8` from `Re=400` to `1000` (Ghia `×2.7`); BL grows by more
+  than an order of magnitude (Ghia `×16`; our `Re=400` BL value is too under-resolved for a
+  reliable ratio).
+- **The primary vortex centre migrates toward the geometric centre:** `(0.562,0.609) →
+  (0.531,0.570)`, matching Ghia's `(0.5547,0.6055)` and `(0.5313,0.5625)` to about
+  `0.01`. This migration is the canonical cavity "rev".
+- **The strengths are NOT converged.** Under refinement at `Re=1000` the BR eddy rises
+  `55% → 67% → 74%` of Ghia's value (`n = 64, 96, 128`), the BL eddy `25% → 45% → 57%`, and
+  the primary `76% → 82% → 86%`. P1/PSPG under-resolves the eddies at these meshes; the
+  trend is toward Ghia, but a finer mesh or higher order is needed to pin the values.
 
 So the "rev" the search was for appears on two levels: the **flow** reorganises (corner
 vortices grow, centre moves) and the **discretisation** strains (method agreement
@@ -69,8 +89,9 @@ loosens). Both are measured, both are consistent with the literature.
   accurate per node).
 - The two methods still agree (mutual RMS `0.006`/`0.016`), with agreement loosening as Re
   rises — the discretisation's strain made visible.
-- The physical rev is captured: secondary corner vortices grow with Re and the primary
-  centre migrates to the Ghia-published locations.
+- The physical rev is captured **qualitatively**: with the stream function, the secondary
+  eddies sit at Ghia's locations, counter-rotate and grow with Re, and the primary centre
+  migrates to the Ghia-published location.
 
 **Not claimed:**
 - **Still steady laminar.** No unsteady/turbulent transition (that is `~Re 8000`, and
@@ -78,8 +99,9 @@ loosens). Both are measured, both are consistent with the literature.
   regime plus the numerical strain — not a Hopf bifurcation to time-dependence.
 - `Re=1000` is **not** fully mesh-converged at these resolutions (RMS `~0.03` for TH);
   the trend is convergent but a finer mesh / higher order would tighten it.
-- Corner-vortex strength is measured by a simple reverse-flow proxy, not a full
-  stream-function topology; the trend is robust, the absolute numbers are indicative.
+- The eddy **strengths** are not mesh-converged (BR `74%`, BL `57%`, primary `86%` of
+  Ghia at `n=128`, `Re=1000`, all still rising with `n`); only PSPG is used for the
+  stream-function analysis.
 - 2-D only; no new mathematics — Ghia, PSPG, Taylor–Hood are classical. The contribution
   is the dual-element validation and the explicit, measured account of the rev.
 

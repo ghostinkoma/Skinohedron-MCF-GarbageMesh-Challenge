@@ -44,8 +44,11 @@ the rev investigation and the enrichment route. Five panels:
   with mesh; mass `M` is exact at every `n`.
 - **Real benchmark** (`08b`/`10`): Ghia `Re=1000` centreline RMS falls under both
   refinement (PSPG) and enrichment (Taylor–Hood, more accurate per node).
-- **Rev separation** (`10`): the numerical rev shrinks (`(1)`), the physical corner vortex
-  converges to a fixed value (`(3)`) — the two plotted together.
+- **Rev separation** (`10`, corrected via `08b`): the numerical rev shrinks (`(1)`). The
+  physical corner vortex — now the bottom-right eddy's stream function at `Re=1000` — is
+  still **rising** under refinement (`55→67→74%` of Ghia, n=64→128), so it is *not* yet
+  shown to converge to a fixed value. (The earlier "converges" series used a `u_min` proxy
+  that measured the primary vortex's return flow.)
 - **Summary:** precision *does* improve with `(1)`+`(3)`; what improves is the
   approximation; the field-intrinsic structure itself remains (correctly).
 
