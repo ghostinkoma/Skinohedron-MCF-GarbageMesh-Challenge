@@ -245,7 +245,7 @@ void main(){
 }`;
 
 const DRAW_FS = `
-precision mediump float;
+precision highp float;   /* must match DRAW_VS: uTexW is shared, and tet ids need highp */
 varying vec3 vN; varying float vEnergy; varying float vTetIdx;
 uniform sampler2D uMat;
 uniform float uTexW;

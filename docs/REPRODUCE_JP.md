@@ -142,7 +142,10 @@ PYTHONPATH=../ python3 run_all.py
 
 ### `No module named 'ksf'`
 
-`PYTHONPATH` の設定が必要です：
+`run_all.py` は `src/` を自分でインポートパスに追加するので、リポジトリの
+ルートから `python3 src/verification/run_all.py` を実行すれば設定は不要です。
+各セクションのスクリプト（`s2_layered_complex.py` など）を単体で実行する場合は、
+`PYTHONPATH` に `src/` を指定してください：
 
 ```bash
 # src/verification/ から実行する場合
@@ -154,11 +157,9 @@ PYTHONPATH=src/ python3 src/verification/run_all.py
 
 ### `No such file or directory: '.../results/results.json'`
 
-`results/` フォルダを先に作る必要があります：
-
-```bash
-mkdir -p ../results   # src/verification/ にいる場合
-```
+以前の `run_all.py` は誤って `src/results/` に書き出していました。現在は
+リポジトリのルートの `results/results.json` に書き出し（フォルダがなければ作成）、
+`viewer/data.js` も作り直します。最新版に更新してください。
 
 ### `pip3: コマンドが見つかりません`
 

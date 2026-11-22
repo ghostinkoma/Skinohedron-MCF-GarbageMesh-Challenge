@@ -140,7 +140,10 @@ Estimated runtime: 5–10 minutes on a low-spec shared server.
 
 ### `No module named 'ksf'`
 
-The `PYTHONPATH` environment variable must point to `src/`:
+`run_all.py` adds `src/` to the import path itself, so
+`python3 src/verification/run_all.py` works from the repository root without any
+setting. The individual section scripts (`s2_layered_complex.py`, …) still need
+`PYTHONPATH` to point to `src/`:
 
 ```bash
 # when running from src/verification/
@@ -152,11 +155,9 @@ PYTHONPATH=src/ python3 src/verification/run_all.py
 
 ### `No such file or directory: '.../results/results.json'`
 
-Create the `results/` directory first:
-
-```bash
-mkdir -p ../results   # when inside src/verification/
-```
+Older versions of `run_all.py` wrote to `src/results/` by mistake. It now
+writes `results/results.json` at the repository root (creating the folder if
+needed) and also regenerates `viewer/data.js`; update to the current version.
 
 ### `pip3: command not found`
 
