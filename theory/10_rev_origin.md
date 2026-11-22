@@ -90,8 +90,8 @@ Taylor–Hood velocity on its P2 node grid. BR eddy at `Re = 1000`:
   evidence that the eddy strength is a property of the continuous solution (candidate 3),
   not of the mesh.
 - **Slow.** The observed order is `p ≈ 0.6–0.66`, well below the rate for smooth solutions.
-  This is consistent with — but does not prove — pollution by the lid-corner singularity
-  (the velocity is discontinuous at the two top corners). It also means the extrapolated
+  The cause is the lid-corner singularity (the velocity is discontinuous at the two top
+  corners) — shown by the controlled experiment of §3c. It also means the extrapolated
   value is pinned only to about 10%; it does not reproduce Ghia's digits (Ghia's own value
   comes from a 129 × 129 grid, so the 6–11% gap is within the combined uncertainty and is
   not read as a discrepancy).
@@ -100,6 +100,27 @@ Taylor–Hood velocity on its P2 node grid. BR eddy at `Re = 1000`:
 real flow structure whose location, Re-dependence **and** (now) limiting strength are
 element-independent — field-intrinsic (3), resolved to ~10% — with a slowly decaying
 approximation error on top.
+
+## 3c. Why the convergence is slow: the lid-corner singularity (added 2026-11)
+
+`src/verification3d/lid_singularity_verify.py` changes **only** the lid boundary
+condition: the classical lid `u = 1` (velocity jumps to 0 at the two top corners) versus
+the regularised lid `u = 16x²(1−x)²` (smooth, zero with zero slope at the corners). Same
+element (Taylor–Hood), same `Re = 1000`, same meshes (n = 40 … 64), same stream-function
+measurement. The regularised flow is a different, weaker flow and is used only as a
+diagnostic — it is not compared with Ghia.
+
+| lid | primary `ψ`: fitted order | primary: change n=56→64 | BR eddy: change n=56→64 |
+|---|---|---|---|
+| classical `u = 1` | `p ≈ 0.87` | `0.87%` | `2.4%` |
+| regularised `16x²(1−x)²` | `p ≈ 2.85` | `0.029%` | `0.045%` |
+
+Removing the singularity raises the observed order from below 1 to about 3 and shrinks the
+refinement changes by about 30× (primary) and 50× (BR eddy). With nothing else changed,
+the slow convergence of §3b is **attributable to the lid-corner singularity**, not to the
+element, the stabilisation or the solver. This is the classical picture: a corner
+singularity limits the global convergence rate of a standard (non-graded) FE mesh, and
+local mesh grading or singular enrichment would be needed to recover the smooth rate.
 
 ## 4. The eddy grows with Re (the advection weight)
 
@@ -135,15 +156,19 @@ corner eddy is at Ghia's location and grows with Re (`×2.8` vs `×2.7`); its st
 
 **Not claimed:** that the original Cauchy-difference series measured the corner eddy (it
 did not — the convergence now shown is a different, stream-function result); the eddy
-strength to better than ~10%; that the slow order is caused by the corner singularity
-(consistent, not proven).
+strength to better than ~10%; a graded or singularity-enriched mesh (not built).
 
-**Next (optional):** a corner-singularity treatment (e.g. a regularised lid) or local
-refinement at the top corners, to test whether the order recovers.
+**Verified (follow-up, §3c):** with only the lid condition changed, the observed order rises
+from `~0.87` (classical) to `~2.85` (regularised) and the refinement changes drop ~30–50×:
+the slow convergence comes from the lid-corner singularity.
+
+**Next (optional):** local mesh grading at the two top corners for the classical lid, to
+recover the faster rate on the Ghia problem itself.
 
 ## 7. Files
 
 - Verification: `src/verification3d/rev_origin_verify.py` (checks A–C; ~5 min);
-  `src/verification3d/corner_eddy_convergence_verify.py` (§3b; ~11 min).
+  `src/verification3d/corner_eddy_convergence_verify.py` (§3b; ~11 min);
+  `src/verification3d/lid_singularity_verify.py` (§3c; ~8 min).
 - Uses `src/verification3d/cavity_highre_verify.py` (stream function, Ghia Table V
   constants) and the PSPG / Taylor–Hood solvers of `08`, `08a`.

@@ -105,8 +105,8 @@ loosens). Both are measured, both are consistent with the literature.
 - The eddy **strengths** are not mesh-converged at the resolutions of this note (BR `74%`,
   BL `57%`, primary `86%` of Ghia at `n=128`, `Re=1000`, all still rising with `n`). A
   follow-up (`10` §3b, `corner_eddy_convergence_verify.py`) refines further with PSPG and
-  Taylor–Hood: the BR strength converges slowly (order `~0.6`) and both elements
-  extrapolate to `≈1.9e-3`, within ~10% of Ghia.
+  Taylor–Hood: the BR strength converges slowly (order `~0.6`, caused by the lid-corner
+  singularity — `10` §3c) and both elements extrapolate to `≈1.9e-3`, within ~10% of Ghia.
 - 2-D only; no new mathematics — Ghia, PSPG, Taylor–Hood are classical. The contribution
   is the dual-element validation and the explicit, measured account of the rev.
 

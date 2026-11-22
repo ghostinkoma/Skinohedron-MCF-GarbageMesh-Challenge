@@ -77,7 +77,8 @@ def advection(tris, nv, ux, uy):
     return coo_matrix((d, (r, c)), shape=(nv, nv)).tocsr()
 
 
-def solve_cavity(n, Re, picard=60, tol=1e-7):
+def solve_cavity(n, Re, picard=60, tol=1e-7, lid_profile=None):
+    """lid_profile: optional function u_lid(x); default None = the classical lid u = 1."""
     V, T = mesh_square(n); nv = len(V); nu = 1.0/Re; h = 1.0/n
     K, Ml, Bx, By, tris = assemble(V, T)
     tau = h/2.0*min(1.0, Re*h/6.0) if Re > 1 else h*h/(4*nu)   # standard PSPG parameter
@@ -85,7 +86,7 @@ def solve_cavity(n, Re, picard=60, tol=1e-7):
     lid = np.isclose(y, 1.0)
     walls = (np.isclose(x, 0) | np.isclose(x, 1) | np.isclose(y, 0)) & ~lid
     dir_u = lid | walls
-    ub = np.zeros(nv); ub[lid] = 1.0; vb = np.zeros(nv)
+    ub = np.zeros(nv); ub[lid] = 1.0 if lid_profile is None else lid_profile(x[lid]); vb = np.zeros(nv)
     ux = ub.copy(); uy = vb.copy(); p = np.zeros(nv); Z = csr_matrix((nv, nv))
     for it in range(picard):
         N = advection(tris, nv, ux, uy); A = nu*K+N
