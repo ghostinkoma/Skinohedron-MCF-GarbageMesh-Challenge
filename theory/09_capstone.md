@@ -17,7 +17,7 @@ physics? — and answered it by refusing to stack theory on unverified theory. T
   interface); bet that **one** operator `L = M⁻¹K` carries heat *and* waves (`03`); add
   pressure/incompressibility (`04`) and shape transforms (`05`).
 - **V3 fluid (`06`–`06h`).** Stokes → advection → full Navier–Stokes (`06a`–`06c`), on
-  cube/torus/sphere (`06s`); then a domain map — inertial mass exact, Coulomb/stiffness
+  cube/torus/sphere (`06s`); then a domain map — inertial mass exact for the `06f` test field (`O(h²)` in general), Coulomb/stiffness
   `O(h²)` (`06d`–`06f`), temperature both a fused energy domain and a multiplicative glue
   (`06g`–`06h`).
 - **Audit (`06z`, `07`, `07a`).** Treat it all as hypothesis: re-run every script (all
