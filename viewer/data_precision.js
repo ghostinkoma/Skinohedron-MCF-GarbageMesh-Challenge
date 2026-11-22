@@ -55,7 +55,7 @@ const PRECISION = {
       // value was 0.0140 from an unrecorded pair, re-measured as 0.0142 (rev_origin_verify.py).
       points:[ {x:"粗",err:0.0161}, {x:"中",err:0.0142}, {x:"密",err:0.0130} ] },
     physical: { label:"物理のレブ (右下二次渦 ψ, Re=1000)", source:"08b",
-      note:"細分で増加中 (Ghia 1.75e-3 の 55→67→74%) → まだ収束していない",
+      note:"n≤128 では増加中 (Ghia の 55→67→74%)。延長計算 (10 §3b) で PSPG・TH ともゆっくり収束し、外挿値 ≈1.9e-3 で一致",
       points:[ {x:"n64",err:9.585e-4}, {x:"n96",err:1.181e-3}, {x:"n128",err:1.304e-3} ] }
   },
 

@@ -103,7 +103,7 @@ const V={
   rev(){const r=PRECISION.revSeparation;return card("レブの分離：数値(1) vs 物理(3)","10 / 08b",
      logChart(r.numerical.points,'err','amber','blue',r.physical.points),
      `<span class="leg"><span><span class="dot" style="background:var(--amber)"></span>${r.numerical.label}</span><span><span class="dot" style="background:var(--blue)"></span>${r.physical.label}</span></span><br>
-      数値のレブは細分で <b>減る</b>（(1)近似）。物理のレブ（右下二次渦の流れ関数 ψ）は細分で <b>まだ増加中</b>（Ghia 1.75e-3 の 55→67→74%）で、一定値への収束は未確認。<br><span class="note">訂正: 以前の「収束」は u_min による代理量で、主渦の戻り流れを測っていた（issue #3 A3）。</span>`);},
+      数値のレブは細分で <b>減る</b>（(1)近似）。物理のレブ（右下二次渦の流れ関数 ψ）は n≤128 ではまだ増加中（Ghia 1.75e-3 の 55→67→74%）。さらに細かく計算すると（10 §3b）PSPG と Taylor-Hood の両方が <b>ゆっくり収束</b>し、同じ外挿値 ≈1.9e-3（Ghia の約10%以内）に向かう。<br><span class="note">訂正: 以前の「収束」は u_min による代理量で、主渦の戻り流れを測っていた（issue #3 A3）。</span>`);},
   residual(){const r=PRECISION.residuals;return card(r.title,r.source,
      logChart(r.compose.points,'err','amber'),
      `<b>${r.coulomb.label}</b>: ${r.coulomb.off} → ${r.coulomb.on}<br><span class="note">${r.coulomb.note}</span><br><br>

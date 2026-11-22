@@ -68,6 +68,34 @@ growing with Re), which is consistent with (3); but their **strength** is still 
 by approximation error (1) at these meshes, so the two are **not yet separated** for the
 eddy strength.
 
+## 3b. Follow-up: the eddy strength does converge — slowly (added 2026-11)
+
+`src/verification3d/corner_eddy_convergence_verify.py` refines further with **two**
+elements: PSPG to `n = 192`, and Taylor–Hood (P2/P1) to `n = 64`, with `ψ` from the
+Taylor–Hood velocity on its P2 node grid. BR eddy at `Re = 1000`:
+
+| element | n | BR `ψ` | % of Ghia |
+|---|---|---|---|
+| PSPG | 128 / 160 / 192 | `1.304e-3` / `1.383e-3` / `1.442e-3` | 74 / 79 / 82 |
+| Taylor–Hood | 32 / 40 / 48 / 56 / 64 | `1.267e-3` / `1.351e-3` / `1.410e-3` / `1.455e-3` / `1.490e-3` | 72 / 77 / 80 / 83 / 85 |
+
+- **Monotone convergence.** Both sequences rise with shrinking increments.
+- **Same limit from two elements.** Fitting `ψ(h) = ψ∞ − C hᵖ` to the last four levels
+  gives `ψ∞ ≈ 1.92e-3` for both PSPG and Taylor–Hood (they differ by well under 5%), within
+  ~10% of Ghia's `1.75e-3`. Two different discretisations agreeing on the limit is the
+  evidence that the eddy strength is a property of the continuous solution (candidate 3),
+  not of the mesh.
+- **Slow.** The observed order is `p ≈ 0.6`, well below the rate for smooth solutions.
+  This is consistent with — but does not prove — pollution by the lid-corner singularity
+  (the velocity is discontinuous at the two top corners). It also means the extrapolated
+  value is pinned only to about 10%; it does not reproduce Ghia's digits (Ghia's own value
+  comes from a 129 × 129 grid).
+
+**Updated separation.** Numerical rev: approximation error, shrinking (§2). Physical rev:
+real flow structure whose location, Re-dependence **and** (now) limiting strength are
+element-independent — field-intrinsic (3), resolved to ~10% — with a slowly decaying
+approximation error on top.
+
 ## 4. The eddy grows with Re (the advection weight)
 
 Scaling the advection by `α` at fixed `ν` is the same as replacing `Re` by `αRe`, so the
@@ -95,16 +123,21 @@ needed to account for the cavity. (Both remain relevant elsewhere: `12`.)
 corner eddy is at Ghia's location and grows with Re (`×2.8` vs `×2.7`); its strength rises
 `55 → 67 → 74%` of Ghia at n = 64 → 128.
 
-**Not claimed (revised):** that the physical rev converges; that it has been separated
-from approximation error for the eddy strength; that the original Cauchy-difference
-series measured the corner eddy (it did not).
+**Verified (follow-up, §3b):** the eddy strength converges monotonically for PSPG
+(to n = 192) and Taylor–Hood (to n = 64); both extrapolate to the same limit
+`≈ 1.9e-3` (within ~10% of Ghia); observed order `p ≈ 0.6`.
 
-**Next:** finer meshes or higher-order elements (Taylor–Hood stream function) to pin the
-eddy strength; a Richardson-type estimate once a third clean refinement level is in the
-asymptotic range.
+**Not claimed:** that the original Cauchy-difference series measured the corner eddy (it
+did not — the convergence now shown is a different, stream-function result); the eddy
+strength to better than ~10%; that the slow order is caused by the corner singularity
+(consistent, not proven).
+
+**Next (optional):** a corner-singularity treatment (e.g. a regularised lid) or local
+refinement at the top corners, to test whether the order recovers.
 
 ## 7. Files
 
-- Verification: `src/verification3d/rev_origin_verify.py` (checks A–C; ~5 min).
+- Verification: `src/verification3d/rev_origin_verify.py` (checks A–C; ~5 min);
+  `src/verification3d/corner_eddy_convergence_verify.py` (§3b; ~10 min).
 - Uses `src/verification3d/cavity_highre_verify.py` (stream function, Ghia Table V
   constants) and the PSPG / Taylor–Hood solvers of `08`, `08a`.
