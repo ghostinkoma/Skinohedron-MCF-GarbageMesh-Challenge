@@ -90,6 +90,7 @@ interpretation is not read as a verified result.
 | [A] | Neumann spectrum → `π²` (`9.72`, `9.86`); wave anisotropy `Δc/c ≈ 0.048` (`02`, `03`) |
 | [A] | flat-torus spectrum `5%` (`05`); damping rate vs `γ/2` `0.08–0.20%`; Robin half-life `∝ 1/h` (`03b`) |
 | [A] | stiffness `uᵀKu` `5.0 → 1.3%` (n=8→16, `06f`); Taylor–Green decay `3.1%` (`06c`); advection dispersion `~5%` (`06b`) |
+| [A] | stiffness `K` on a **non-periodic problem not in P1** (`u = sin(2x+1)·eʸ·cos z`, Dirichlet): `L²` `h^2.00`, `H¹` `h^1.00`, eigenvalue `h^2.00` on the uniform mesh **and** on irregular meshes with up to ~3×10⁴ sign-flipped weights (`stiffness_irregular_verify.py`) |
 | [A] | lumped mass `O(h²)` for a generic field (`mass_quadrature_verify.py` B) |
 | [A] | Coulomb `1/r` `0.8%` (`06e`); self-gravity central pressure `2.95 → 0.42%` (`14`); curvature `O(h²)` (`13`); reflectance `R²` recovery (`01d`) |
 | [A] | **external benchmark**: lid-driven cavity vs Ghia (1982), Re = 100 / 400 / 1000, PSPG and Taylor–Hood; corner eddies located but still under-resolved (`08`, `08a`, `08b`) |
@@ -117,7 +118,7 @@ listed below the table.
 |---|---|---|
 | linear fields / two-material interfaces exact; `uᵀKu = 1` for `u = x` (`02`, `06a`, `06h`, `14`) | P1 reproduces affine functions; patch test [Irons & Razzaque 1972] | exact, any mesh |
 | Poiseuille nodally exact (`06a`, `06f`) | nodal exactness of the 1-D Galerkin solution [Tong 1969; Douglas & Dupont 1974] | exact at the nodes for constant/polynomial sources in 1-D |
-| stiffness / energy error `O(h²)`, `uᵀKu` `5.0 → 1.3%` (`06f`, `03`) | Céa's lemma [Céa 1964] + P1 interpolation: `‖u−u_h‖_{H¹} = O(h)` ⇒ energy error `O(h²)` [Ciarlet 1978; Brenner & Scott 2008] | `O(h²)` for smooth fields |
+| stiffness / energy error `O(h²)`, `uᵀKu` `5.0 → 1.3%` (`06f`, `03`); `H¹` `O(h)` and `L²` `O(h²)` on uniform and irregular meshes (`stiffness_irregular_verify.py`) | Céa's lemma [Céa 1964] + P1 interpolation: `‖u−u_h‖_{H¹} = O(h)` ⇒ energy error `O(h²)` [Ciarlet 1978; Brenner & Scott 2008] | `O(h²)` for smooth fields |
 | `L²` / pointwise-type errors; Coulomb `1/r` `0.8%`; self-gravity `2.95 → 0.42%` (`06e`, `14`) | Aubin–Nitsche duality [Aubin 1967; Nitsche 1968] | `O(h²)` in `L²` for smooth data; reduced near the non-smooth density jump (`14`) |
 | eigenvalues: `π²` spectra, flat torus `5%`, sphere spectral `O(h^2.00)` (`02`, `03`, `05`, paper §6) | Babuška–Osborn spectral approximation [Babuška & Osborn 1991] | eigenvalue error = square of the `H¹` eigenfunction error: `O(h²)` |
 | pointwise consistency only `O(h)`, divergence on irregular meshes; sign-flipped cotangents ↔ obtuse angles (paper §6–7, `05` §5b) | "no free lunch" for discrete Laplacians [Wardetzky et al. 2007]; discrete maximum principle needs non-obtuse meshes [Ciarlet & Raviart 1973] | no local, symmetric, linearly precise operator keeps the maximum principle on all meshes |
