@@ -65,7 +65,8 @@ pointwise (at every single vertex). Running the experiments showed this is false
 
 What IS true, and what actually matters for most applications, is that:
 
-- **Eigenvalues** (vibration frequencies) converge extremely well: ~4th order
+- **Eigenvalues** (vibration frequencies) converge at 2nd order, the classical P1 rate
+  (only the l=1 triplet — the coordinate functions — is faster, ~h^3.7: a special case)
 - **Energy** (integrals of squared gradients) converges to 2nd order
 - **Pointwise** values converge at 1st order on regular meshes
 
