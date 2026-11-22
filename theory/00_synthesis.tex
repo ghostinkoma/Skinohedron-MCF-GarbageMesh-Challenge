@@ -102,10 +102,14 @@ seamless (every vertex has identical degree $15$). \emph{Geometric} deformation
 (moving vertices) degrades $L$: a cube$\to$ball map drops tet quality from $0.657$
 to $0.014$ and creates $2844$ negative-conductance (sign-flipped) cotangent edges;
 a wrapped torus, $2726$. The physics still solves on the degraded mesh. And there
-is a first-principles reason the torus is exact but the sphere is not: the
-\emph{torus is flat} (a periodic box) while the \emph{sphere is curved}, so by the
-\emph{Theorema Egregium} no distortion-free cube$\to$sphere map exists (best
-sampled quality $0.224$, never the baseline $0.657$).
+is a first-principles reason the torus is exact but the ball is not: the
+\emph{flat 3-torus} is exactly a periodic box (gluing, no vertex moves), while the
+cube and the ball, though both flat solids, have \emph{different boundaries} ---
+the cube's $90^\circ$ edges and corners must open to a smooth sphere, and by
+\emph{Liouville's theorem} no conformal cube$\to$ball map exists (the
+\emph{Theorema Egregium} applies only to the boundary surface). Numerically, the
+best sampled quality is $0.224$, never the baseline $0.657$ --- empirical
+support, not a bound.
 
 \paragraph{The sign-flip question (\S5b) --- settled honestly.}
 Can a different weight formula (norm) remove those negative conductances? Not for
@@ -204,7 +208,7 @@ Seamless wrap & uniform degree & $15$ everywhere & PASS \\
 Geometric ball distortion & --- & $q_{\min}\,0.014$, $2844$ flips & PASS \\
 Geometric torus distortion & --- & $q_{\text{mean}}\,0.053$, $2726$ flips & PASS \\
 Topological torus distortion & preserved & $q\,0.657$, $0$ flips & PASS \\
-Sphere obstruction (Egregium) & $<$ baseline & best $q_{\min}\,0.224$ & PASS \\
+Sphere obstruction (boundary / Liouville) & $<$ baseline & best $q_{\min}\,0.224$ & PASS \\
 Physics on degraded mesh & bounded & wave ratio $0.337$ & PASS \\
 \bottomrule
 \end{longtable}

@@ -16,8 +16,10 @@ Checks (the five targets of section 5):
      reflection.
   3. Geometric distortion metric: cube->ball and wrapped-torus degrade tet
      quality and create sign-flipped cotangent weights; topological does not.
-  4. Sphere obstruction is real (Theorema Egregium): no cube->sphere map keeps
-     quality near 1.
+  4. Sphere obstruction is observed: no cube->ball map tried keeps quality near
+     the baseline. (Reason: the cube's 90-degree edges/corners must open to a
+     smooth sphere, and by Liouville's theorem no conformal cube->ball map
+     exists; the Theorema Egregium applies only to the boundary surface.)
   5. Physics still solves on the degraded mesh: heat decays, wave oscillates.
 """
 import sys, os

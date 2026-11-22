@@ -84,10 +84,14 @@ constant null mode, and the seam is seamless (every vertex has identical degree
 drops tet quality from `0.657` to `0.014` and creates `2844` negative-conductance
 (sign-flipped) cotangent edges; a wrapped torus, `2726`. The physics still solves
 on the degraded mesh (heat decays, wave stays bounded). And there is a
-first-principles reason the torus is exact but the sphere is not: the **torus is
-flat** (a periodic box, zero curvature) while the **sphere is curved**, so by the
-*Theorema Egregium* no distortion-free cube→sphere map exists (the best achievable
-quality across sampled maps is `0.224`, never the baseline `0.657`).
+first-principles reason the torus is exact but the ball is not: the **flat
+3-torus** is exactly a periodic box (gluing, no vertex moves), while the cube and
+the ball, though both flat solids, have **different boundaries** — the cube's `90°`
+edges and corners must open to a smooth sphere, and by **Liouville's theorem** no
+conformal (angle-preserving) cube→ball map exists. (The *Theorema Egregium*
+applies only to the boundary surface.) Numerically, the best quality among the
+sampled maps is `0.224`, never the baseline `0.657` — empirical support, not a
+bound.
 
 **The sign-flip question (§5b) — settled honestly.** Can a different weight
 formula (norm) remove those negative conductances? The answer is *not for free*.
@@ -189,7 +193,7 @@ Each row is asserted by the named script; *measured* values are the live output.
 | Geometric ball distortion | — | `q_min 0.014`, `2844` flips | PASS |
 | Geometric torus distortion | — | `q_mean 0.053`, `2726` flips | PASS |
 | Topological torus distortion | preserved | `q 0.657`, `0` flips | PASS |
-| Sphere obstruction (Egregium) | `< baseline` | best `q_min 0.224` | PASS |
+| Sphere obstruction (boundary / Liouville) | `< baseline` | best `q_min 0.224` | PASS |
 | Physics on degraded mesh | bounded | wave ratio `0.337` | PASS |
 
 ### §5b — sign-flips & norms (`cotangent_signflip_verify.py`)
