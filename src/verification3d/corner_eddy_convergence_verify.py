@@ -7,20 +7,23 @@ PSPG n <= 128 (55 -> 74% of Ghia). This script pushes the refinement further wit
 independent elements and estimates the limit.
 
   Re = 1000, stream function psi from K psi = int phi (dv/dx - du/dy), psi = 0 on walls.
-  PSPG P1/P1 at n = 128, 160, 192, and Taylor-Hood P2/P1 at n = 32 .. 64 (its P2 nodes are
+  PSPG P1/P1 at n = 96 .. 192, and Taylor-Hood P2/P1 at n = 32 .. 64 (its P2 nodes are
   exactly the vertices of mesh_square(2n), so psi is computed on that P1 mesh).
 
   CHECK A  Monotone convergence: for both elements the BR strength increases with n and
            the increments shrink.
-  CHECK B  Extrapolation psi(h) = psi_inf - C h^p (least squares on the last 4 levels):
-           both elements give the SAME limit (within 5%), close to Ghia (within 15%).
+  CHECK B  Extrapolation psi(h) = psi_inf - C h^p fitted to the last 4 levels of each
+           element: both give the SAME limit (within 5%), close to Ghia (within 15%).
            Agreement of two different discretisations on the limit is the evidence that
            the eddy strength is a property of the continuous solution, not of the mesh.
+           The fit is also repeated on ALL levels to show its sensitivity: the limit moves
+           by a few percent with the choice of levels (and a 3-level fit is exactly
+           determined, hence unreliable -- not used).
   CHECK C  The observed order p is low (~0.6-0.7), well below the rate for smooth
            solutions. This is consistent with -- but does not prove -- pollution by the
            lid-corner singularity (the velocity jumps at the two top corners).
 
-Runtime: ~10 minutes.
+Runtime: ~11 minutes.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -31,7 +34,7 @@ from cavity_taylorhood_verify import solve_TH
 from cavity_pspg_verify import mesh_square
 
 RE = 1000
-PSPG_N = (128, 160, 192)
+PSPG_N = (96, 128, 160, 192)
 TH_N = (32, 40, 48, 56, 64)
 
 
@@ -96,7 +99,9 @@ def main():
     for name, (ns, vals, loc) in series.items():
         a, p = extrapolate(ns[-4:], vals[-4:])
         lim[name] = (a, p)
-        print(f"    {name:<12} psi_inf = {a:.4e} ({a/g*100:.0f}% of Ghia), observed order p = {p:.2f}")
+        a_all, p_all = extrapolate(ns, vals)
+        print(f"    {name:<12} last 4: psi_inf = {a:.4e} ({a/g*100:.0f}% of Ghia), order p = {p:.2f}"
+              f"   | all {len(ns)}: psi_inf = {a_all:.4e} ({a_all/g*100:.0f}%), p = {p_all:.2f}")
         assert np.hypot(loc[0] - gx, loc[1] - gy) < 0.02, f"{name}: eddy not at Ghia's location"
     a1, a2 = lim["PSPG"][0], lim["Taylor-Hood"][0]
     print(f"    PSPG vs Taylor-Hood limits differ by {abs(a1-a2)/((a1+a2)/2)*100:.1f}%")
@@ -113,7 +118,7 @@ def main():
 
     print("\nConclusion: the corner-eddy strength converges, slowly, and two independent")
     print("elements agree on its limit -- it is a property of the continuous solution.")
-    print("The value is pinned to ~10% (extrapolation uncertainty), not to Ghia's digits.")
+    print("The limit is pinned to ~10% (fit-dependent), not to Ghia's digits.")
 
 
 if __name__ == "__main__":
