@@ -1,5 +1,7 @@
 # 14 · Gravity as a Field on the Same Operator — and the Field Sets the Body Force
 
+> **Reading guide.** This note mixes verified numbers with interpretation. See `theory/README.md`, *How to read the claims*, for which results are implementation checks [I], approximation-accuracy results [A], and interpretation [N]. "Coulomb" as a name for the stiffness `K` means *the shared Laplacian*, not that viscosity is electrostatic.
+
 **Status:** **verified**, `src/verification3d/field_coupling_verify.py`. A direct
 extension of `06e` (Coulomb): Newtonian gravity is the **same Poisson operator** as
 electrostatics, and the gravitational field — like the Coulomb field — enters Navier–Stokes

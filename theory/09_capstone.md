@@ -1,5 +1,7 @@
 # 09 · Capstone — From a Garbage Mesh to a Classical Benchmark
 
+> **Reading guide.** This note mixes verified numbers with interpretation. See `theory/README.md`, *How to read the claims*, for which results are implementation checks [I], approximation-accuracy results [A], and interpretation [N]. "Coulomb" as a name for the stiffness `K` means *the shared Laplacian*, not that viscosity is electrostatic.
+
 A short integrating note across the whole project: where it started, what one operator
 turned out to carry, and the moment the work met an external standard. It does not
 re-prove anything (each claim points to its document and script); it states the shape of

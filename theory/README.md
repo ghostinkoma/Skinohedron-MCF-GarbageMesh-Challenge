@@ -61,6 +61,51 @@ They are kept listed here so the dangling citations are explained, not hidden.
 
 The viewers label every value that depends on these items as *unpublished source*.
 
+## How to read the claims — three kinds
+
+The results in this notebook are of three different kinds, and they support different
+conclusions. Each note keeps its own wording; this table labels the main results so that
+an implementation check is not read as evidence of physical accuracy, and an
+interpretation is not read as a verified result.
+
+- **[I] Implementation check** — holds by construction: the exact solution lies in the
+  P1 space (patch test), or the quantity is an algebraic identity of the discrete
+  operators. A pass shows the code is assembled correctly; it says nothing about how
+  accurate the model is for general fields.
+- **[A] Approximation accuracy** — the solution is *not* representable exactly, so the
+  number measures discretisation error, preferably as a rate under refinement, or against
+  an external benchmark. These are the results that test the model.
+- **[N] Interpretation / analogy** — a reading or a name, not a measured quantity.
+
+| kind | result (note) |
+|---|---|
+| [I] | linear fields and two-material interfaces exact: Couette, `T=k₂/(k₁+k₂)`, `u=Uμ₂/(μ₁+μ₂)` (`02`, `06a`, `06h`) |
+| [I] | Poiseuille nodally exact — classical 1-D superconvergence (`06a`) |
+| [I] | `D∘grad = K`, `P² = P`, `K·1 = 0`, solvability (`04`); `‖Bu‖ ~ 1e-16` after projection (`06c`) |
+| [I] | `C·1 = 0`, skew-energy `φᵀC_skew φ = 0`, discrete mass conservation (`06b`, `06s`) |
+| [I] | superposition of linear solves (`06e`, `14`); `K_ν = νK` at constant `T` (`06h`); `uᵀKu = 1` for `u = x` (`14`) |
+| [I] | trace-free projection residual `~1e-19`, S-kernel unitarity / reciprocity (paper §4–5, §10–12; `01`) |
+| [I] | lumped mass exact for a whole-period sinusoid on a uniform mesh — trapezoidal rule (`06f`; `mass_quadrature_verify.py` A) |
+| [A] | 2-D sphere: pointwise `O(h^1.06)`, spectral (Rayleigh quotient) `O(h^2.00)`; irregular mesh diverges / erratic (paper §6) |
+| [A] | Neumann spectrum → `π²` (`9.72`, `9.86`); wave anisotropy `Δc/c ≈ 0.048` (`02`, `03`) |
+| [A] | flat-torus spectrum `5%` (`05`); damping rate vs `γ/2` `0.08–0.20%`; Robin half-life `∝ 1/h` (`03b`) |
+| [A] | stiffness `uᵀKu` `5.0 → 1.3%` (n=8→16, `06f`); Taylor–Green decay `3.1%` (`06c`); advection dispersion `~5%` (`06b`) |
+| [A] | lumped mass `O(h²)` for a generic field (`mass_quadrature_verify.py` B) |
+| [A] | Coulomb `1/r` `0.8%` (`06e`); self-gravity central pressure `2.95 → 0.42%` (`14`); curvature `O(h²)` (`13`); reflectance `R²` recovery (`01d`) |
+| [A] | **external benchmark**: lid-driven cavity vs Ghia (1982), Re = 100 / 400 / 1000, PSPG and Taylor–Hood; corner eddies located but still under-resolved (`08`, `08a`, `08b`) |
+| [A] | P1 → P8 enrichment to `2e-13` — **1-D only**, script unpublished (`06f`) |
+| [N] | "one operator unifies heat / wave / pressure / Coulomb / gravity" — the shared ingredient is the Laplacian, a common mathematical form; it is not evidence that these phenomena are physically linked (`00`, `07`, `09`, `14`) |
+| [N] | "Coulomb domain" as a name for the stiffness `K` (see below) |
+| [N] | temperature as "glue", "two sides of one coin", any Higgs-like resemblance (`06d`, `06g`, `06h`, `07`) |
+| [N] | the "rev" as a field-intrinsic structure (`09`, `10` — `10` is unpublished and under review) |
+
+**On the name "Coulomb domain".** The stiffness `K` is the discrete Laplacian. It
+appears in electrostatics (`Kφ = Mρ`), in heat conduction, and in the viscous term of
+Navier–Stokes. The viscous Laplacian comes from momentum diffusion, not from the
+electrostatic Poisson equation; intermolecular (Coulomb) forces set the *value* of the
+viscosity, which this notebook does not compute (`06e`). Where the notes say "Coulomb
+domain" or "Coulomb/stiffness", read **"stiffness `K` (the shared Laplacian)"**.
+
 ## The one-line result
 
 A single geometric operator — the cotangent / FE Laplacian `L = M⁻¹K`, read as a

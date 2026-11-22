@@ -1,5 +1,7 @@
 # 06e · Coulomb and Viscosity — the Other Term, and an Honest Multi-Scale Boundary
 
+> **Reading guide.** This note mixes verified numbers with interpretation. See `theory/README.md`, *How to read the claims*, for which results are implementation checks [I], approximation-accuracy results [A], and interpretation [N]. "Coulomb" as a name for the stiffness `K` means *the shared Laplacian*, not that viscosity is electrostatic.
+
 **Status:** part **verified** (`coulomb_operator_verify.py`), part **conceptual map
 (explicitly not yet verified)**. This note takes up an insight about the *origin* of
 the viscosity `ν` that `06c`/`06d` treat as a given constant: at the molecular level,

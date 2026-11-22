@@ -1,5 +1,7 @@
 # 06g · Fusing the Temperature Domain — the "Sum-Gain" Ticket
 
+> **Reading guide.** This note mixes verified numbers with interpretation. See `theory/README.md`, *How to read the claims*, for which results are implementation checks [I], approximation-accuracy results [A], and interpretation [N]. "Coulomb" as a name for the stiffness `K` means *the shared Laplacian*, not that viscosity is electrostatic.
+
 **Status:** **verified**, `src/verification3d/thermal_fusion_verify.py`. Takes up the
 insight that decomposing physical domains and taking their **sum (相和)** is a *ticket
 to fuse domains*: each domain, joined with adjoint-consistent coupling, contributes
