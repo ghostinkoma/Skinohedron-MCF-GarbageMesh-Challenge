@@ -1,5 +1,7 @@
 # 08a · Taylor–Hood Cross-Check — the Cavity Match Is Not a Tuning Artifact
 
+> **Known theory.** Taylor–Hood P2/P1 satisfies the inf-sup condition (Taylor & Hood 1973; Brezzi & Fortin 1991), so it needs no stabilisation parameter. See `theory/README.md`, *Where the results sit in known theory*, for references.
+
 **Status:** **verified**, `src/verification3d/cavity_taylorhood_verify.py`. A direct
 follow-up to `08`. P0 validated the lid-driven cavity with **PSPG-stabilised** equal-order
 P1 — but PSPG carries a stabilisation parameter `τ`, so a sceptic can ask whether the

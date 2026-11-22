@@ -1,5 +1,7 @@
 # 02 · The Heat-Conduction Route (the integrating foundation)
 
+> **Known theory.** the FE (cotangent) conductance converging to `π²` is Babuška–Osborn eigenvalue convergence `O(h²)`; the exact two-material interface is P1 affine reproduction (patch test). See `theory/README.md`, *Where the results sit in known theory*, for references.
+
 **Status:** exploration findings + decision (backed by code). This document
 records where the scatter form and the FE/DEC operator **integrate**, prompted by
 two leads: *(a) look hard for the place the scatter form is consistent with

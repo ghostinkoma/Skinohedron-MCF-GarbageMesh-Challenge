@@ -14,7 +14,7 @@ This repository contains:
 
 - **A mathematical framework** (KSF) for computing on curved surfaces
   using a class of layered polyhedral meshes and *trace-free dual tensors*
-- **A 10-page peer-review-ready paper** (`paper/`) with all claims grounded in
+- **An 11-page peer-review-ready paper** (`paper/`) with all claims grounded in
   numerical experiments
 - **A complete Python verification suite** (`src/`) that reproduces every number
   in the paper from scratch
@@ -74,7 +74,7 @@ Skinohedron-MCF-GarbageMesh-Challenge/
 │
 ├── paper/
 │   ├── kosaka_skin-o-hedron_revised.tex   ← LaTeX source (compile with pdflatex)
-│   └── kosaka_skin-o-hedron_revised.pdf   ← compiled PDF (10 pages)
+│   └── kosaka_skin-o-hedron_revised.pdf   ← compiled PDF (11 pages)
 │
 ├── src/
 │   ├── ksf/                    ← core library (import as "from ksf import mesh")
@@ -130,7 +130,7 @@ No internet connection required. No build step. No npm.
 
 ## Paper
 
-`paper/kosaka_skin-o-hedron_revised.pdf` — 10 pages, LaTeX, all claims tagged to
+`paper/kosaka_skin-o-hedron_revised.pdf` — 11 pages, LaTeX, all claims tagged to
 verification scripts.
 
 To rebuild the PDF:

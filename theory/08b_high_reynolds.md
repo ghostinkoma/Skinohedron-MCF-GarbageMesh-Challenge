@@ -1,5 +1,7 @@
 # 08b · Higher Reynolds — Re=400 & 1000, Both Elements, and the "Rev"
 
+> **Known theory.** the corner eddies are the Moffatt (1964) eddies; the benchmark values are Ghia, Ghia & Shin (1982), Table I and Table V. See `theory/README.md`, *Where the results sit in known theory*, for references.
+
 **Status:** **verified**, `src/verification3d/cavity_highre_verify.py`. Pushes the
 cross-validated cavity (`08`, `08a`) to `Re=400` and `Re=1000` with **both** the PSPG and
 the Taylor–Hood elements, and searches for the **"rev"** — the Reynolds-driven change in

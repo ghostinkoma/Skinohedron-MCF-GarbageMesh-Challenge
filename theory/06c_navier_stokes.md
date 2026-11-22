@@ -1,5 +1,7 @@
 # 06c · V3 Stage C — Full Incompressible Navier–Stokes (the nonlinear coupling)
 
+> **Known theory.** the checkerboard pressure is the failure of the inf-sup (LBB) condition of Babuška–Brezzi for equal-order P1/P1; the `O(h²)` decay-rate error is Babuška–Osborn. See `theory/README.md`, *Where the results sit in known theory*, for references.
+
 **Status:** theory + **verification (PASS)**. Backed by
 `src/verification3d/fluid_navier_stokes_verify.py` (checks A–E). Stage C couples
 everything: viscosity (`03`), the pressure projection (`04`), and the convective

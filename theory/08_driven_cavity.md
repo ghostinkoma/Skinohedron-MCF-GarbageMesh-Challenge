@@ -1,5 +1,7 @@
 # 08 · P0 — A Trustworthy Pressure, Validated on the Lid-Driven Cavity
 
+> **Known theory.** PSPG is the Hughes–Franca–Balestra stabilisation that circumvents the Babuška–Brezzi inf-sup condition; the benchmark is Ghia, Ghia & Shin (1982). See `theory/README.md`, *Where the results sit in known theory*, for references.
+
 **Status:** **verified**, `src/verification3d/cavity_pspg_verify.py` (2-D, Ghia benchmark)
 and `cavity3d_demo.py` (3-D). This is the load-bearing test named by the audit (`06z`):
 the `06z` finding was that the equal-order P1 pressure is inf-sup-unstable / checkerboard

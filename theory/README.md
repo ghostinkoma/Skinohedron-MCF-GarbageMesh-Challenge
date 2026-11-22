@@ -106,6 +106,55 @@ electrostatic Poisson equation; intermolecular (Coulomb) forces set the *value* 
 viscosity, which this notebook does not compute (`06e`). Where the notes say "Coulomb
 domain" or "Coulomb/stiffness", read **"stiffness `K` (the shared Laplacian)"**.
 
+## Where the results sit in known theory
+
+Most results in this notebook are instances of classical numerical-analysis theorems.
+The table says which theorem each result follows from (or is consistent with), so that a
+measured number can be read against what the theory already predicts. References are
+listed below the table.
+
+| result (note) | known theory it follows from | what the theory predicts |
+|---|---|---|
+| linear fields / two-material interfaces exact; `uᵀKu = 1` for `u = x` (`02`, `06a`, `06h`, `14`) | P1 reproduces affine functions; patch test [Irons & Razzaque 1972] | exact, any mesh |
+| Poiseuille nodally exact (`06a`, `06f`) | nodal exactness of the 1-D Galerkin solution [Tong 1969; Douglas & Dupont 1974] | exact at the nodes for constant/polynomial sources in 1-D |
+| stiffness / energy error `O(h²)`, `uᵀKu` `5.0 → 1.3%` (`06f`, `03`) | Céa's lemma [Céa 1964] + P1 interpolation: `‖u−u_h‖_{H¹} = O(h)` ⇒ energy error `O(h²)` [Ciarlet 1978; Brenner & Scott 2008] | `O(h²)` for smooth fields |
+| `L²` / pointwise-type errors; Coulomb `1/r` `0.8%`; self-gravity `2.95 → 0.42%` (`06e`, `14`) | Aubin–Nitsche duality [Aubin 1967; Nitsche 1968] | `O(h²)` in `L²` for smooth data; reduced near the non-smooth density jump (`14`) |
+| eigenvalues: `π²` spectra, flat torus `5%`, sphere spectral `O(h^2.00)` (`02`, `03`, `05`, paper §6) | Babuška–Osborn spectral approximation [Babuška & Osborn 1991] | eigenvalue error = square of the `H¹` eigenfunction error: `O(h²)` |
+| pointwise consistency only `O(h)`, divergence on irregular meshes; sign-flipped cotangents ↔ obtuse angles (paper §6–7, `05` §5b) | "no free lunch" for discrete Laplacians [Wardetzky et al. 2007]; discrete maximum principle needs non-obtuse meshes [Ciarlet & Raviart 1973] | no local, symmetric, linearly precise operator keeps the maximum principle on all meshes |
+| lumped mass exact for a whole-period sinusoid on a uniform mesh, `O(h²)` otherwise (`06f`, `mass_quadrature_verify.py`) | trapezoidal-rule exactness for trigonometric polynomials [Trefethen & Weideman 2014]; mass-lumping error analysis [Ciarlet 1978] | exact for band-limited periodic integrands; `O(h²)` in general |
+| time stepping: damping rate `0.08–0.20%`, dispersion cutoff `f ≈ 0.127`, stable leapfrog (`03b`, `06b`, `06c`) | Lax–Richtmyer equivalence (consistency + stability ⇔ convergence) [Lax & Richtmyer 1956]; CFL condition [Courant, Friedrichs & Lewy 1928] | convergence iff stable; explicit wave step stable below the CFL limit |
+| equal-order P1/P1 pressure checkerboard (`06c`, `06z`) | inf-sup (LBB) condition [Babuška 1973; Brezzi 1974] | equal-order P1/P1 violates inf-sup ⇒ spurious pressure modes |
+| PSPG-stabilised P1/P1 cavity (`08`) | PSPG circumvents inf-sup [Hughes, Franca & Balestra 1986] | stable, convergent pressure with a mesh-dependent `−τK` term (`τ ∝ h²` in the viscous limit) |
+| Taylor–Hood P2/P1 cavity (`08a`) | Taylor–Hood is inf-sup stable [Taylor & Hood 1973; Brezzi & Fortin 1991] | stable without a parameter; velocity one order higher |
+| cavity vs Ghia; corner eddies (`08`, `08a`, `08b`) | benchmark [Ghia, Ghia & Shin 1982]; corner eddies [Moffatt 1964] | infinite sequence of counter-rotating corner eddies, rapidly weakening |
+| P1 → P8 enrichment to `2e-13` (`06f`, 1-D only) | `p`-version / spectral element convergence [Babuška & Suri 1994] | exponential convergence in `p` for analytic solutions |
+| cube → ball needs distortion (`05`) | Liouville's theorem on conformal maps in ℝ³; Gauss–Bonnet / Theorema Egregium for the boundary surface | no conformal cube → ball map exists |
+
+**References**
+
+- J.-P. Aubin. Behavior of the error of the approximate solutions of boundary value problems for linear elliptic operators by Galerkin's and finite difference methods. *Ann. Scuola Norm. Sup. Pisa* 21 (1967) 599–637.
+- I. Babuška. The finite element method with Lagrangian multipliers. *Numer. Math.* 20 (1973) 179–192.
+- I. Babuška and J. Osborn. Eigenvalue problems. In *Handbook of Numerical Analysis*, Vol. II, North-Holland, 1991, 641–787.
+- I. Babuška and M. Suri. The p and h-p versions of the finite element method, basic principles and properties. *SIAM Review* 36 (1994) 578–632.
+- S. C. Brenner and L. R. Scott. *The Mathematical Theory of Finite Element Methods*, 3rd ed. Springer, 2008.
+- F. Brezzi. On the existence, uniqueness and approximation of saddle-point problems arising from Lagrangian multipliers. *RAIRO Anal. Numér.* 8 (1974) 129–151.
+- F. Brezzi and M. Fortin. *Mixed and Hybrid Finite Element Methods*. Springer, 1991.
+- J. Céa. Approximation variationnelle des problèmes aux limites. *Ann. Inst. Fourier* 14 (1964) 345–444.
+- P. G. Ciarlet. *The Finite Element Method for Elliptic Problems*. North-Holland, 1978.
+- P. G. Ciarlet and P.-A. Raviart. Maximum principle and uniform convergence for the finite element method. *Comput. Methods Appl. Mech. Engrg.* 2 (1973) 17–31.
+- R. Courant, K. Friedrichs and H. Lewy. Über die partiellen Differenzengleichungen der mathematischen Physik. *Math. Ann.* 100 (1928) 32–74.
+- J. Douglas Jr. and T. Dupont. Galerkin approximations for the two point boundary problem using continuous, piecewise polynomial spaces. *Numer. Math.* 22 (1974) 99–109.
+- U. Ghia, K. N. Ghia and C. T. Shin. High-Re solutions for incompressible flow using the Navier–Stokes equations and a multigrid method. *J. Comput. Phys.* 48 (1982) 387–411.
+- T. J. R. Hughes, L. P. Franca and M. Balestra. A new finite element formulation for computational fluid dynamics: V. Circumventing the Babuška–Brezzi condition. *Comput. Methods Appl. Mech. Engrg.* 59 (1986) 85–99.
+- B. M. Irons and A. Razzaque. Experience with the patch test for convergence of finite elements. In *The Mathematical Foundations of the Finite Element Method with Applications to Partial Differential Equations*, Academic Press, 1972, 557–587.
+- P. D. Lax and R. D. Richtmyer. Survey of the stability of linear finite difference equations. *Comm. Pure Appl. Math.* 9 (1956) 267–293.
+- H. K. Moffatt. Viscous and resistive eddies near a sharp corner. *J. Fluid Mech.* 18 (1964) 1–18.
+- J. Nitsche. Ein Kriterium für die Quasi-Optimalität des Ritzschen Verfahrens. *Numer. Math.* 11 (1968) 346–348.
+- C. Taylor and P. Hood. A numerical solution of the Navier–Stokes equations using the finite element technique. *Comput. Fluids* 1 (1973) 73–100.
+- P. Tong. Exact solution of certain problems by finite-element method. *AIAA J.* 7 (1969) 178–180.
+- L. N. Trefethen and J. A. C. Weideman. The exponentially convergent trapezoidal rule. *SIAM Review* 56 (2014) 385–458.
+- M. Wardetzky, S. Mathur, F. Kälberer and E. Grinspun. Discrete Laplace operators: no free lunch. *Symposium on Geometry Processing* (2007) 33–37.
+
 ## The one-line result
 
 A single geometric operator — the cotangent / FE Laplacian `L = M⁻¹K`, read as a

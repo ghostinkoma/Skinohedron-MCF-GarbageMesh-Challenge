@@ -346,9 +346,11 @@ it as the defensible core of the KSF consistency claim.
 \label{conj:spectral}
 Under Definition~\ref{def:layered} with uniform shape-regularity, the
 eigenvalue error for smooth eigenfunctions is $\varepsilon^{\mathrm{sp}}_k=\Order(h^{2})$:
-the P1 eigenfunction error is $\Order(h)$ in $H^1$, and the eigenvalue error is
-its square by the standard Babuška--Osborn spectral-approximation framework
-\citep{babuska1991eigenvalue,strang1973analysis}. Observation~\ref{obs:s6}
+the P1 eigenfunction error is $\Order(h)$ in $H^1$ (Céa's lemma plus interpolation
+\citep{cea1964approximation,ciarlet1978finite}; $\Order(h^2)$ in $L^2$ by the
+Aubin--Nitsche duality argument \citep{aubin1967behavior,nitsche1968kriterium}),
+and the eigenvalue error is its square by the standard Babuška--Osborn
+spectral-approximation framework \citep{babuska1991eigenvalue,strang1973analysis}. Observation~\ref{obs:s6}
 matches this rate ($2.00$). The faster $\Order(h^{3.68})$ of the $\ell=1$
 triplet is observed, not proved; it is specific to the coordinate functions on
 this mesh family and should not be read as general super-convergence.
@@ -370,7 +372,8 @@ The first draft claimed the construction stays ``stable'' with determinant bound
 $\propto h^2$ on non-Delaunay meshes. The accurate statement separates two
 properties that the word ``stable'' conflated: \emph{non-degeneracy} of the mass
 operator (true) and the \emph{discrete maximum principle} (false once
-circumcenters leave triangles).
+circumcenters leave triangles; the off-diagonal sign condition for P1 elements is
+the classical acute/non-obtuse-mesh condition of \citet{ciarlet1973maximum}).
 
 \begin{observation}[\texttt{src/s7\_nondelaunay.py}, level 4]
 \label{obs:s7}
@@ -569,7 +572,11 @@ experiments.
 
 \bibliographystyle{plainnat}
 \begin{thebibliography}{99}
+\bibitem[Aubin(1967)]{aubin1967behavior} J.-P.~Aubin. Behavior of the error of the approximate solutions of boundary value problems for linear elliptic operators by Galerkin's and finite difference methods. \emph{Ann. Scuola Norm. Sup. Pisa}, 21:599--637, 1967.
 \bibitem[Babuška and Osborn(1991)]{babuska1991eigenvalue} I.~Babuška and J.~Osborn. Eigenvalue problems. In \emph{Handbook of Numerical Analysis}, Vol.~II, 641--787. North-Holland, 1991.
+\bibitem[Céa(1964)]{cea1964approximation} J.~Céa. Approximation variationnelle des problèmes aux limites. \emph{Ann. Inst. Fourier}, 14:345--444, 1964.
+\bibitem[Ciarlet(1978)]{ciarlet1978finite} P.~G. Ciarlet. \emph{The Finite Element Method for Elliptic Problems}. North-Holland, 1978.
+\bibitem[Ciarlet and Raviart(1973)]{ciarlet1973maximum} P.~G. Ciarlet and P.-A. Raviart. Maximum principle and uniform convergence for the finite element method. \emph{Comput. Methods Appl. Mech. Engrg.}, 2:17--31, 1973.
 \bibitem[Colton and Kress(2013)]{colton2013inverse} D.~Colton and R.~Kress. \emph{Inverse Acoustic and Electromagnetic Scattering Theory}, 3rd ed. Springer, 2013.
 \bibitem[Crane et~al.(2013)]{crane2013digital} K.~Crane, F.~de~Goes, M.~Desbrun, and P.~Schröder. Digital geometry processing with discrete exterior calculus. \emph{ACM SIGGRAPH Courses}, 2013.
 \bibitem[Desbrun et~al.(2005)]{desbrun2005discrete} M.~Desbrun, E.~Kanso, and Y.~Tong. Discrete differential forms for computational modeling. \emph{ACM SIGGRAPH Courses}, 2005.
@@ -577,6 +584,7 @@ experiments.
 \bibitem[Hackbusch(1999)]{hackbusch1999sparse} W.~Hackbusch. A sparse matrix arithmetic based on $\mathcal{H}$-matrices. \emph{Computing}, 62(2):89--108, 1999.
 \bibitem[Hildebrandt et~al.(2006)]{hildebrandt2006convergence} K.~Hildebrandt, K.~Polthier, and M.~Wardetzky. On the convergence of metric and geometric properties of polyhedral surfaces. \emph{Geometriae Dedicata}, 123:89--112, 2006.
 \bibitem[Hirani(2003)]{hirani2003discrete} A.~N. Hirani. \emph{Discrete Exterior Calculus}. Ph.D. thesis, Caltech, 2003.
+\bibitem[Nitsche(1968)]{nitsche1968kriterium} J.~Nitsche. Ein Kriterium für die Quasi-Optimalität des Ritzschen Verfahrens. \emph{Numer. Math.}, 11:346--348, 1968.
 \bibitem[Strang and Fix(1973)]{strang1973analysis} G.~Strang and G.~Fix. \emph{An Analysis of the Finite Element Method}. Prentice-Hall, 1973.
 \bibitem[Wardetzky et~al.(2007)]{wardetzky2007discrete} M.~Wardetzky, S.~Mathur, F.~Kälberer, and E.~Grinspun. Discrete Laplace operators: no free lunch. \emph{Symposium on Geometry Processing}, 33--37, 2007.
 \bibitem[Xu(2004)]{xu2004discrete} G.~Xu. Discrete Laplace--Beltrami operators and their convergence. \emph{Computer Aided Geometric Design}, 21(8):767--784, 2004.
