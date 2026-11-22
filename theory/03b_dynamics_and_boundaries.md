@@ -1,5 +1,7 @@
 # 03b · Dynamics, Boundaries, and the Parametrised Instrument (Step 1.5)
 
+> **Known theory.** stability and convergence of the explicit time stepping are Lax–Richtmyer (consistency + stability) and the CFL condition; the dispersion cutoff is the CFL limit seen in frequency. See `theory/README.md`, *Where the results sit in known theory*, for references.
+
 **Status:** consolidation document (theory), backed by code and a runnable
 viewer. It continues `03` (the single operator `L = M⁻¹K`) by adding the two
 things that turn `L` from a static spectrum into a *physics you can drive and

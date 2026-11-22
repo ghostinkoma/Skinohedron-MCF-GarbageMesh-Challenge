@@ -1,5 +1,7 @@
 # 03 · One Operator, Two Physics: Heat and Scalar Wave (Step 1 consolidation)
 
+> **Known theory.** the shared spectrum converging to `π²` is Babuška–Osborn eigenvalue convergence `O(h²)`; the exact interfaces are P1 affine reproduction. See `theory/README.md`, *Where the results sit in known theory*, for references.
+
 **Status:** consolidation document (theory), backed by code. This closes the
 "Step 1 / Step 1e / heat" arc by stating the single structure the project arrived
 at, and the verification that supports it. It is the foundation on which Step 2

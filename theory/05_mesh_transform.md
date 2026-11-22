@@ -1,5 +1,7 @@
 # 05 · Mesh Transform: Torus and Sphere (V2.5, theory)
 
+> **Known theory.** the sign-flip / obtuse-angle link is the discrete maximum principle of Ciarlet–Raviart and the "no free lunch" theorem of Wardetzky et al.; the cube → ball obstruction is Liouville's theorem (§1). See `theory/README.md`, *Where the results sit in known theory*, for references.
+
 **Status:** theory + **verification (PASS)**. Backed by
 `src/verification3d/mesh_transform_verify.py`, which asserts all five targets of
 §5. The measured numbers are recorded inline. In keeping with 空論を重ねない, the

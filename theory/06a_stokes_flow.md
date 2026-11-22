@@ -1,5 +1,7 @@
 # 06a · V3 Stage A — Stokes Flow (linear), the plumbing before the nonlinearity
 
+> **Known theory.** Couette is P1 affine reproduction; nodal exactness of Poiseuille is the 1-D Galerkin nodal exactness of Tong / Douglas–Dupont. See `theory/README.md`, *Where the results sit in known theory*, for references.
+
 **Status:** theory + **verification (PASS)** for Stage A of V3. Backed by
 `src/verification3d/fluid_stokes_verify.py` (checks A–E, measured numbers inline). Stokes flow drops the
 nonlinear advection term, leaving a **fully linear** problem — so it is verifiable
