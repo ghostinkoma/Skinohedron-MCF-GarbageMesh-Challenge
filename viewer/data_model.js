@@ -12,13 +12,13 @@ const MODEL = {
       precision: "exact", color: "#2dd4bf",
       fact: "uᵀM u = 0.2500 at every n (0.00% error) — for the periodic sinusoid test",
       detail: "For the periodic sinusoidal test field on the uniform Kuhn mesh, the lumped-mass form equals the continuous integral at all resolutions (the trapezoidal rule is exact for such trigonometric integrands). This is a property of that test, not of lumped mass in general: on non-periodic problems or irregular meshes lumped mass carries O(h²) error and affects dispersion.",
-      script: "(unpublished script — not in this repository)", doc: "06f" },
+      script: "fluid_highorder_accuracy_verify.py (reconstructed)", doc: "06f" },
 
     { id: "coulomb", label: "Stiffness  K", role: "shared Laplacian — electrostatics (Coulomb) / viscosity / heat",
       precision: "O(h²)", color: "#f59e0b",
       fact: "uᵀK u low by 5.0→1.3% (n=8→16);  1/r law 0.8%",
       detail: "All smooth-mode error lives in the stiffness. The same K gives electrostatics (Kφ=Mρ, 1/r to 0.8%, superposition 4e-16). Route to machine precision: local enrichment (see rule).",
-      script: "coulomb_operator_verify.py / (06f numbers: unpublished script)", doc: "06e / 06f" },
+      script: "coulomb_operator_verify.py / fluid_highorder_accuracy_verify.py", doc: "06e / 06f" },
 
     { id: "temperature", label: "Temperature  T", role: "parallel domain + glue",
       precision: "fuse + mediate", color: "#a78bfa",
@@ -72,7 +72,7 @@ const MODEL = {
   // Honest scope (from 06z audit)
   earned: [
     "operator identities (heat/wave/pressure/Coulomb) — exact, pressure-independent",
-    "domain error split: mass exact (periodic sinusoid test), Coulomb O(h²), enrichment → 2e-13 (1-D) — 06f numbers from an unpublished script",
+    "domain error split: mass exact (periodic sinusoid test), Coulomb O(h²), enrichment → 2e-13 (1-D)",
     "velocity divergence-free AND pressure-decoupled (~1e-4)",
     "temperature fusion invariant (0.0001%) and glue interface (7.5e-16)"
   ],

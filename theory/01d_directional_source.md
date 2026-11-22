@@ -150,7 +150,7 @@ Two findings, recorded honestly because they revise this document:
 The simple add/subtract of §2 (TFSF) failed to produce a clean `+x` wave: the
 matched control `Z₂=Z₁` still reflected ~50%, and a per-face flux monitor showed a
 spurious ~0.17 reflection with no interface. Root cause — the same one raised
-against the model and treated in `01e` (unpublished; see `README.md`, *Unpublished*): the node
+against the model and treated in [`01e`](01e_geometric_consistency.md) (reconstructed 2026-11): the node
 `S_wave = 2P₀−I` is **geometry-blind**. A tetrahedron's four faces are not
 axis-aligned, so the node redistributes energy isotropically and there is no clean
 "`+x` port" to inject the incident wave into. Direction-resolved quantities
