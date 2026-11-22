@@ -58,27 +58,36 @@ exact spherical harmonic Y₂ₓᵧ, whose exact eigenvalue is λ = 6.
 
 | h | Pointwise error | Spectral error |
 |---|----------------|----------------|
-| 0.299 | 4.6% | 0.0046% |
-| 0.151 | 2.1% | 0.00041% |
-| 0.075 | 1.0% | 0.000032% |
-| 0.038 | 0.50% | 0.0000024% |
-| 0.019 | 0.25% | 0.00000018% |
+| 0.299 | 4.6% | 2.2% |
+| 0.151 | 2.1% | 0.57% |
+| 0.075 | 1.0% | 0.14% |
+| 0.038 | 0.50% | 0.036% |
+| 0.019 | 0.25% | 0.0089% |
 
 - Pointwise error halves when h halves → **first order** (O(h^1.06))
-- Spectral error drops by factor ~12 when h halves → **near fourth order** (O(h^3.68))
+- Spectral error (Rayleigh quotient of Y₂, the paper's definition) drops by a
+  factor ~4 when h halves → **second order** (O(h^2.00)), the classical P1 rate.
+  The l=2 eigenvalues give the same O(h^2.00).
+- *Correction.* Earlier versions reported "near fourth order (O(h^3.68))". That
+  number came from the mean of the **l=1 eigenvalue triplet** (the coordinate
+  functions x, y, z), which converges anomalously fast on the icosphere
+  (0.0046% → 0.00000018%). It is a special case, not the generic spectral rate.
 
 **On a persistently irregular mesh (jittered so quality never improves):**
 
-| h | Pointwise error | Spectral error |
-|---|----------------|----------------|
-| 0.317 | 33% | 0.31% |
-| 0.165 | 152% | 0.83% |
-| 0.083 | 260% | 0.88% |
-| 0.041 | 509% | 0.88% |
-| 0.021 | 944% | 0.84% |
+| h | Pointwise error | Spectral error (RQ) | l=2 eigenvalues | l=1 triplet |
+|---|----------------|----------------|----------------|----------------|
+| 0.317 | 33% | 3.4% | 4.7% | 0.31% |
+| 0.165 | 152% | 0.091% | 2.5% | 0.83% |
+| 0.083 | 260% | 0.26% | 1.6% | 0.88% |
+| 0.041 | 509% | 0.18% | 1.2% | 0.88% |
+| 0.021 | 944% | 0.049% | 0.97% | 0.84% |
 
 - Pointwise error **gets worse** as mesh refines → **diverges**
-- Spectral error **stagnates** around 0.88% → does not improve
+- Spectral error (Rayleigh quotient) **jumps around** with no clean rate; the
+  l=2 eigenvalues improve only slowly (~h^0.56, still ~1% at the finest level);
+  the l=1 triplet stagnates around 0.85%. Spectral accuracy degrades markedly
+  compared with the regular mesh.
 
 ### What this means
 
@@ -86,7 +95,7 @@ The operator is **not** second-order accurate pointwise. The first draft's claim
 was too strong.
 
 But for most real applications:
-- You care about **eigenvalues** (vibration frequencies, buckling loads) → excellent
+- You care about **eigenvalues** (vibration frequencies, buckling loads) → good (classical 2nd order on shape-regular meshes)
 - You care about **energy** (heat, electric potential, fluid flow) → good
 - You rarely need pointwise accuracy at every single vertex
 
@@ -136,6 +145,6 @@ Part II is implementable as written.
 | §2 | Shape quality bounded, area defect O(h²) | ✅ |
 | §3 | d∘d = 0, Euler = 2 | ✅ |
 | §4–5 | Trace residual ≲ 1e-19, frame-invariance ≲ 1e-18 | ✅ |
-| §6 | Pointwise order 1.06 (not 2), spectral order 3.68 | ⚠️ corrected |
+| §6 | Pointwise order 1.06 (not 2), spectral order 2.00 (l=1 triplet alone: 3.68) | ⚠️ corrected |
 | §7 | Non-degenerate, loses max principle on bad meshes | ⚠️ corrected |
 | §10 | Unitarity / reciprocity / passivity to machine eps | ✅ |

@@ -28,13 +28,16 @@ This repository contains:
 | Claim | Result |
 |---|---|
 | Trace-free projection is exact & frame-invariant | ✅ residual ≲ 1e-19 |
-| Spectral convergence on regular meshes | ✅ O(h^3.68) — super-convergent |
+| Spectral convergence on regular meshes | ✅ O(h^2.00) — the classical P1 rate (Rayleigh quotient and generic eigenvalues; only the l=1 triplet is faster, ~h^3.7) |
 | Pointwise convergence on regular meshes | ⚠️ O(h^1.06) — first order only |
-| Convergence on irregular meshes | ❌ pointwise diverges; spectral stagnates |
+| Convergence on irregular meshes | ❌ pointwise diverges; spectral converges only slowly and erratically |
 | S-kernel unitarity / reciprocity / passivity (Part II) | ✅ to machine precision |
 
-The key finding: the operator achieves **excellent eigenvalue and energy
-convergence** (near 4th order) while being honest about pointwise limits.
+The key finding: the operator achieves **sound eigenvalue and energy
+convergence** at the classical second-order rate while being honest about
+pointwise limits. (An earlier version reported "near 4th order"; that number
+came from the l=1 eigenvalue triplet — the coordinate functions — which is a
+special case. Generic modes converge as O(h²).)
 This is consistent with — not a violation of — the Wardetzky et al.
 *"no free lunch"* theorem (SGP 2007).
 
@@ -150,7 +153,7 @@ coincidence — it is mathematically unavoidable if you want *all four* of:
 local, symmetric, linearly precise, and maximum-principle preserving.
 
 KSF navigates this by being explicit about the trade-off:
-**give up pointwise maximum principle → gain spectral super-convergence**.
+**give up pointwise maximum principle → keep sound (second-order) spectral convergence**.
 The trace-free dual tensor is the mechanism that makes this trade-off clean
 and coordinate-invariant.
 

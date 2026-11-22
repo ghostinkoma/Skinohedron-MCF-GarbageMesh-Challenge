@@ -98,7 +98,9 @@ max trace residual  (P1) = 1.08e-19
 === S6: regular icosphere  (harmonic Y2xy) ===
 ...
   pointwise consistency ~ h^1.06
-  spectral convergence  ~ h^3.68
+  spectral convergence  ~ h^2.00  (Rayleigh quotient of Y2xy)
+  eigenvalue l=2        ~ h^2.00
+  eigenvalue l=1*       ~ h^3.68  (*special case: coordinate functions)
 
 === S7: non-Delaunay behaviour ===
 ...

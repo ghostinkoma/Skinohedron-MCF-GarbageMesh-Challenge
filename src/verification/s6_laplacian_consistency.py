@@ -15,14 +15,28 @@ Two error measures, each in the lumped-L2 norm:
 
   pointwise consistency :  || M^{-1} L f  -  lam f ||_{L2} / || lam f ||_{L2}
                            (this is exactly the quantity in Prop. 6.x)
-  spectral error        :  | lambda_h - lambda_exact | / lambda_exact
-                           (the lowest non-zero eigenvalue, lam_exact = 2)
+  spectral error        :  | lambda_h - l(l+1) | / l(l+1),
+                           lambda_h = (f^T L f) / (f^T M f)
+                           (the discrete Rayleigh quotient of the SAME harmonic
+                           f = Y_l used for the pointwise test -- this is the
+                           definition used in the paper, Section 6)
+
+Two eigenvalue cross-checks are also recorded:
+
+  eig_l2  :  max relative error of the l=2 quintet of generalised eigenvalues
+             (exact 6) -- a generic smooth mode.
+  eig_l1  :  relative error of the MEAN of the l=1 triplet (exact 2).
+             CAUTION: the l=1 eigenfunctions are the coordinate functions
+             x, y, z, and on the icosphere this triplet converges anomalously
+             fast (~h^3.7). This is a special case, NOT the generic spectral
+             rate; earlier versions reported it as "spectral super-convergence".
 
 The empirical orders in h are reported. The honest finding (see [結句]) is that
 the STRONG claim is false even on the best mesh -- it is O(h), matching the
 Wardetzky-Mathur-Kaelberer-Grinspun 'no free lunch' theorem -- while the WEAK
-spectral claim holds and is in fact super-convergent. The manuscript should
-restate its theorems accordingly.
+spectral claim holds at the classical P1 rate O(h^2) (Rayleigh quotient and
+generic eigenvalues alike). Only the l=1 triplet is faster. The manuscript
+should restate its theorems accordingly.
 """
 from __future__ import annotations
 import numpy as np
@@ -39,35 +53,54 @@ def _pointwise_error(V, F, harmonic="Y2xy"):
     return float(num / den)
 
 
-def _spectral_error(V, F, n_modes=6, exact=2.0):
+def _spectral_error(V, F, harmonic="Y2xy"):
+    """Paper definition: relative error of the discrete Rayleigh quotient
+    (f^T L f)/(f^T M f) of the exact harmonic f against l(l+1)."""
+    L, M = dec.cotangent_laplacian(V, F)
+    f, lam = sph.harmonic(V, harmonic)
+    lam_h = float((f @ (L @ f)) / (f @ (M * f)))
+    return abs(lam_h - lam) / lam, lam_h
+
+
+def _eigen_errors(V, F, n_modes=9):
+    """Generalised eigenvalues of (L, M): returns (eig_l1, eig_l2).
+    eig_l1 = rel. error of the mean of the l=1 triplet (exact 2; special case),
+    eig_l2 = max rel. error over the l=2 quintet (exact 6; generic mode)."""
     L, M = dec.cotangent_laplacian(V, F)
     Ms = dec.mass_matrix_sparse(M)
     vals = eigsh(L, k=n_modes, M=Ms, sigma=0.0, which="LM",
                  return_eigenvectors=False)
     vals = np.sort(vals)
-    # lambda_0 ~ 0 (constants); the next three ~ 2 (the l=1 triplet)
-    lam_h = float(np.mean(vals[1:4]))
-    return abs(lam_h - exact) / exact, lam_h
+    # lambda_0 ~ 0 (constants); vals[1:4] ~ 2 (l=1); vals[4:9] ~ 6 (l=2)
+    eig_l1 = abs(float(np.mean(vals[1:4])) - 2.0) / 2.0
+    eig_l2 = float(np.max(np.abs(vals[4:9] - 6.0))) / 6.0
+    return eig_l1, eig_l2
 
 
 def run(levels=range(2, 7), harmonic="Y2xy") -> dict:
     out = {"harmonic": harmonic, "regular": {}, "irregular": {}}
     for tag, jit in (("regular", 0.0), ("irregular", 0.30)):
-        hs, pw, sp = [], [], []
+        hs, pw, sp, e1, e2 = [], [], [], [], []
         for lvl in levels:
             V, F = mesh.icosphere(lvl, jitter=jit, seed=1)
             h = mesh.mean_edge_length(V, F)
             hs.append(h)
             pw.append(_pointwise_error(V, F, harmonic))
-            se, _ = _spectral_error(V, F)
+            se, _ = _spectral_error(V, F, harmonic)
             sp.append(se)
-        hs = np.array(hs); pw = np.array(pw); sp = np.array(sp)
-        # only fit a slope where the data actually decreases (irregular plateaus)
-        pw_order = float(np.polyfit(np.log(hs), np.log(pw), 1)[0])
-        sp_order = float(np.polyfit(np.log(hs), np.log(sp), 1)[0])
-        out[tag] = {"h": hs.tolist(), "pointwise": pw.tolist(),
-                    "spectral": sp.tolist(),
-                    "pointwise_order": pw_order, "spectral_order": sp_order}
+            a, b = _eigen_errors(V, F)
+            e1.append(a); e2.append(b)
+        hs = np.array(hs)
+
+        def order(err):
+            return float(np.polyfit(np.log(hs), np.log(np.array(err)), 1)[0])
+
+        out[tag] = {"h": hs.tolist(), "pointwise": list(map(float, pw)),
+                    "spectral": list(map(float, sp)),
+                    "eig_l2": list(map(float, e2)),
+                    "eig_l1": list(map(float, e1)),
+                    "pointwise_order": order(pw), "spectral_order": order(sp),
+                    "eig_l2_order": order(e2), "eig_l1_order": order(e1)}
     return out
 
 
@@ -76,18 +109,28 @@ def main():
     for tag in ("regular", "irregular"):
         d = res[tag]
         print(f"=== S6: {tag} icosphere  (harmonic {res['harmonic']}) ===")
-        print(f"{'h':>9} {'pointwise L2':>14} {'spectral err':>14}")
-        for h, p, s in zip(d["h"], d["pointwise"], d["spectral"]):
-            print(f"{h:>9.5f} {p:>14.4e} {s:>14.4e}")
+        print(f"{'h':>9} {'pointwise L2':>14} {'spectral (RQ)':>14}"
+              f" {'eig l=2':>12} {'eig l=1*':>12}")
+        for h, p, s, b, a in zip(d["h"], d["pointwise"], d["spectral"],
+                                 d["eig_l2"], d["eig_l1"]):
+            print(f"{h:>9.5f} {p:>14.4e} {s:>14.4e} {b:>12.4e} {a:>12.4e}")
         print(f"  pointwise consistency ~ h^{d['pointwise_order']:.2f}")
-        print(f"  spectral convergence  ~ h^{d['spectral_order']:.2f}\n")
+        print(f"  spectral convergence  ~ h^{d['spectral_order']:.2f}"
+              f"  (Rayleigh quotient of {res['harmonic']})")
+        print(f"  eigenvalue l=2        ~ h^{d['eig_l2_order']:.2f}")
+        print(f"  eigenvalue l=1*       ~ h^{d['eig_l1_order']:.2f}"
+              "  (*special case: coordinate functions)\n")
 
     rp = res["regular"]["pointwise_order"]
     rs = res["regular"]["spectral_order"]
+    r1 = res["regular"]["eig_l1_order"]
     print("[結句] On the *best possible* mesh the canonical DEC Laplacian is")
     print(f"       O(h^{rp:.1f}) pointwise -- NOT O(h^2). Prop. 6.x as written is too")
-    print(f"       strong. But the spectral error is O(h^{rs:.1f}) (super-convergent),")
+    print(f"       strong. The spectral error is O(h^{rs:.1f}) -- the classical P1 rate --")
     print("       so the USEFUL claim survives if restated weakly/variationally.")
+    print(f"       (Only the l=1 triplet converges faster, ~h^{r1:.1f}; that is a")
+    print("       special property of the coordinate functions, not a general")
+    print("       spectral super-convergence.)")
     print("       On irregular meshes the pointwise error does not converge at all,")
     print("       exactly as the 'no free lunch' theorem predicts: trace-freeness")
     print("       alone cannot rescue strong consistency. Recommendation: replace")

@@ -63,9 +63,9 @@ central revision relative to the first draft is epistemic: we separate a
 \emph{pointwise} consistency claim from a \emph{spectral / variational} one,
 because they behave very differently and only the latter survives scrutiny.
 Concretely, on a quasi-uniform refinement of $S^2$ the reference operator shows
-first-order pointwise error but third-to-fourth-order eigenvalue error, and on
-a persistently irregular refinement the pointwise error \emph{diverges} while
-the spectral error merely stagnates. This dichotomy is not a defect of one
+first-order pointwise error but the classical second-order eigenvalue error,
+and on a persistently irregular refinement the pointwise error \emph{diverges}
+while the spectral error converges only slowly and erratically. This dichotomy is not a defect of one
 particular construction; it is forced by the Wardetzky--Mathur--Kälberer--Grinspun
 ``no free lunch'' theorem for discrete Laplacians \citep{wardetzky2007discrete}.
 We therefore retire the strong pointwise $\Order(h^2)$ statement of the first
@@ -303,20 +303,28 @@ Rayleigh quotient.
 On the \emph{quasi-uniform} family,
 \[
 \varepsilon^{\mathrm{pt}}_k=\Order(h^{1.06}),\qquad
-\varepsilon^{\mathrm{sp}}_k=\Order(h^{3.68}).
+\varepsilon^{\mathrm{sp}}_k=\Order(h^{2.00}).
 \]
-On the \emph{persistently irregular} family,
-\[
-\varepsilon^{\mathrm{pt}}_k=\Order(h^{-1.15})\ \text{(diverges)},\qquad
-\varepsilon^{\mathrm{sp}}_k\ \text{stagnates at}\ \approx 0.9\%\ (\Order(h^{-0.30})).
-\]
+The generalised eigenvalues of $(L,M)$ for $\ell=2$ give the same
+$\Order(h^{2.00})$. On the \emph{persistently irregular} family,
+$\varepsilon^{\mathrm{pt}}_k=\Order(h^{-1.15})$ (diverges), while
+$\varepsilon^{\mathrm{sp}}_k$ is erratic with no clean rate (least-squares fit
+$h^{1.13}$), and the $\ell=2$ eigenvalues improve only as $h^{0.56}$
+($\approx 1\%$ at the finest level).
+
+Only the $\ell=1$ eigenvalue triplet (the coordinate functions $x,y,z$)
+converges faster on the quasi-uniform family, $\Order(h^{3.68})$, and it
+stagnates at $\approx 0.85\%$ on the irregular one. \emph{Correction: an
+earlier version of this observation reported the $\ell=1$ rate $3.68$ as the
+spectral rate $\varepsilon^{\mathrm{sp}}_k$; it is a special case, and the
+spectral rate under the definition above is $2.00$.}
 \end{observation}
 
 \noindent The lesson is twofold. (i) Even in the best case the operator is
 \emph{first order pointwise}, not second; the strong-form claim of the first
 draft is false. (ii) The \emph{eigenvalue} (and, more generally, energy)
-behaviour is excellent on shape-regular meshes---here near fourth order---and is
-the property worth advertising. We therefore replace the consistency proposition
+behaviour is sound on shape-regular meshes---here the classical second
+order---and is the property worth advertising. We therefore replace the consistency proposition
 by the following pair.
 
 \begin{proposition}[Variational consistency, quasi-uniform meshes]
@@ -334,15 +342,17 @@ quotient is consistent. This is the classical first-order FEM statement
 it as the defensible core of the KSF consistency claim.
 \end{proposition}
 
-\begin{conjecture}[Spectral super-convergence; observed, not proved]
+\begin{remark}[Spectral rate: classical, plus one special case]
 \label{conj:spectral}
-Under Definition~\ref{def:layered} the eigenvalue error satisfies
-$\varepsilon^{\mathrm{sp}}_k=\Order(h^{2})$ or better for smooth eigenfunctions.
-The experiments of Observation~\ref{obs:s6} show order $\approx 3.7$ on the
-icosphere; we state this as a conjecture pending a proof via the standard
-Babuška--Osborn spectral-approximation framework
-\citep{babuska1991eigenvalue,strang1973analysis}.
-\end{conjecture}
+Under Definition~\ref{def:layered} with uniform shape-regularity, the
+eigenvalue error for smooth eigenfunctions is $\varepsilon^{\mathrm{sp}}_k=\Order(h^{2})$:
+the P1 eigenfunction error is $\Order(h)$ in $H^1$, and the eigenvalue error is
+its square by the standard Babuška--Osborn spectral-approximation framework
+\citep{babuska1991eigenvalue,strang1973analysis}. Observation~\ref{obs:s6}
+matches this rate ($2.00$). The faster $\Order(h^{3.68})$ of the $\ell=1$
+triplet is observed, not proved; it is specific to the coordinate functions on
+this mesh family and should not be read as general super-convergence.
+\end{remark}
 
 \begin{remark}[The real driver of convergence]
 \label{rem:realdriver}
@@ -529,9 +539,9 @@ Section & Quantity & Result \\
 \S\ref{sec:tracefree} (s4) & trace residual & $\lesssim 10^{-19}$ \\
 \S\ref{sec:tracefree} (s4) & frame-invariance residual & $\lesssim 10^{-18}$ \\
 \S\ref{sec:consistency} (s6) & pointwise order, regular & $1.06$ \\
-\S\ref{sec:consistency} (s6) & spectral order, regular & $3.68$ \\
+\S\ref{sec:consistency} (s6) & spectral order, regular & $2.00$ ($\ell=1$ triplet: $3.68$) \\
 \S\ref{sec:consistency} (s6) & pointwise, irregular & diverges ($h^{-1.15}$) \\
-\S\ref{sec:consistency} (s6) & spectral, irregular & stagnates ($\approx 0.9\%$) \\
+\S\ref{sec:consistency} (s6) & spectral, irregular & erratic, no clean rate \\
 \S\ref{sec:nondelaunay} (s7) & neg.\ weight fraction & $0\%\to 20.7\%$ \\
 \S\ref{sec:nondelaunay} (s7) & min Voronoi mass & $>0$ ($\Theta(h^2)$) \\
 \S\ref{obs:s10} (s10) & unitarity / reciprocity & $\lesssim10^{-15}$ / $\lesssim10^{-17}$ \\

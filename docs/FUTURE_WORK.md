@@ -61,18 +61,23 @@ d0, d1, _, _ = coboundary(V, F) # gradient / divergence
 
 ---
 
-## 2. Prove Conjecture 1 (spectral super-convergence)
+## 2. Explain the fast l=1 triplet (spectral convergence)
 
-The numerical experiments in §6 show spectral convergence order ~3.7.
-This is observed but not proved.
+The numerical experiments in §6 show the classical spectral convergence order
+2.00 for generic modes (Rayleigh quotient of Y₂, l=2 eigenvalues). An earlier
+version reported ~3.7 as a general "super-convergence"; that rate holds only for
+the l=1 eigenvalue triplet (the coordinate functions). Explaining *why* that
+triplet is so fast on the icosphere is open; the generic O(h²) rate is classical.
 
 The standard tool is the **Babuška–Osborn spectral approximation theory**:
 if the operator is self-adjoint, the mesh family satisfies an approximation
 property, and the exact eigenfunction is smooth, then the eigenvalue error
 is the *square* of the eigenfunction approximation error.
 
-Since KSF gives ~O(h^1.9) in H¹ (from the variational result), the eigenvalue
-error should be ~O(h^3.8) — which matches what we see.
+For P1 elements the eigenfunction error is O(h) in H¹, so the eigenvalue
+error is O(h²) — which matches what we see for generic modes. The l=1 triplet's
+~h^3.7 must come from an additional cancellation specific to the coordinate
+functions on this mesh family.
 
 **What's needed**: A rigorous Sobolev estimate for the KSF metric approximation
 (axioms 4–5 in Definition 2.1). This is a functional-analysis problem, not
