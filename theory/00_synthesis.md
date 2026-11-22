@@ -58,7 +58,8 @@ directional anisotropy `Δc/c ≈ 0.047–0.048` — is the Kuhn cube's broken s
 inherited honestly everywhere downstream.
 
 **Step 1.5 — dynamics and boundaries.** Damping `M p̈ = −Kp − γMṗ` produces the
-predicted envelope (`γ=0.5` tail/head `0.101` vs `0.092`; `γ=2` → `1e-4`). A
+predicted envelope: the decay rate fitted to the oscillation peaks matches `γ/2` to
+`0.08%` (`γ=0.5`) and `0.20%` (`γ=2`). A
 discrete dispersion cutoff appears at `f ≈ 0.127` cycles/step. Robin convection
 `q = h·B·(T−T_env)` gives a half-life `∝ 1/h` (the product `half-life × h` holds at
 `3077–3144` across `h = 0.5…8`, a `2.2%` spread). Stefan–Boltzmann radiation
@@ -160,8 +161,8 @@ Each row is asserted by the named script; *measured* values are the live output.
 
 | claim | exact target | measured | status |
 |---|---|---|---|
-| Damped envelope `γ=0.5` | `0.092` | `0.101` | PASS |
-| Damped envelope `γ=2.0` | `~1e-4` | `1e-4` | PASS |
+| Damped envelope rate `γ=0.5` | `γ/2 = 0.25` | `0.2498` (`0.08%`) | PASS |
+| Damped envelope rate `γ=2.0` | `γ/2 = 1.0` | `1.0020` (`0.20%`) | PASS |
 | Dispersion cutoff | band ~`0.13` | `0.127` cyc/step | PASS |
 | Robin half-life `∝ 1/h` | const `half·h` | `3077–3144` (`2.2%`) | PASS |
 | Stefan–Boltzmann `T⁴` | steep cooling | hot sheds many-fold | PASS |

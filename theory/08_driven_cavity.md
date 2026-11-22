@@ -34,12 +34,14 @@ itself generate. It is the brick that *could* have failed, and did not.
 
 ## 2. Step 2 — pressure as a correlation on the one operator
 
-The stabilisation is not a new machine. The PSPG block is exactly **`−τK`**, with the
-**same stiffness `K`** that carries heat (`02`/`03`), the scalar wave (`03`), Coulomb
-(`06e`), and temperature (`06g`/`06h`). Verified: that `K` is a consistent Laplacian
-(row sums `≤10⁻¹⁵`). So the cavity pressure is **another reading of `L = M⁻¹K`** — a
-correlation domain on the one tetrahedral operator, joining the domain map of `07`
-rather than sitting beside it. Pressure was always one of the operator's readings
+The stabilisation is not a new machine. The PSPG block is exactly **`−τK`**, where `K`
+is the P1 stiffness assembled on the 2-D triangle mesh (`Kₑ = area·GᵀG`) — the **same
+kind of operator** as the Kuhn-cube `K` that carries heat (`02`/`03`), the scalar wave
+(`03`), Coulomb (`06e`), and temperature (`06g`/`06h`), built the same way
+(`Kₑ = vol·GᵀG`), but a separate 2-D matrix, not that 3-D matrix. Verified: that `K` is a
+consistent Laplacian (row sums `≤10⁻¹⁵`). So the cavity pressure is **another reading of
+the P1 Laplacian** — a correlation domain joining the domain map of `07` rather than
+sitting beside it. Pressure was always one of the operator's readings
 (`04`); the cavity shows it is a *trustworthy* one when stabilised.
 
 ---
@@ -79,7 +81,7 @@ carries the pressure-driven flow in 2-D and 3-D alike.
 - No turbulence, no time-dependence; steady laminar only.
 - No new mathematics: PSPG, Picard linearisation, and the Ghia benchmark are classical;
   the contribution is closing the project's own pressure gap against external data and
-  showing the pressure rides the same operator.
+  showing the pressure rides the same kind of operator (a 2-D P1 Laplacian).
 
 ---
 

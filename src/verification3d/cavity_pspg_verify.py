@@ -11,14 +11,16 @@ Two steps (per the plan):
     profiles to the published Ghia, Ghia & Shin (1982) benchmark at Re=100. Also check
     the pressure is now SMOOTH (not checkerboard).
   STEP 2 -- pressure as a CORRELATION on the one operator. The PSPG stabilisation term is
-    -tau * K with the SAME stiffness K that carries heat / wave / Coulomb / temperature.
-    So the cavity pressure is not a new machine; it is another reading of the one
-    tetrahedral operator L = M^-1 K. Verified by assembling the system from that K.
+    -tau * K, where K is the P1 stiffness (Laplacian) assembled here on the 2-D triangle
+    mesh (Ke = area * G^T G). It is the same KIND of operator as the Kuhn-cube K of
+    fem_laplacian (Ke = vol * G^T G) that carries heat / wave / Coulomb / temperature,
+    built the same way -- but a separate 2-D matrix, not that 3-D matrix. So the cavity
+    pressure is not a new machine; it is another reading of the P1 Laplacian.
 
 Result (measured): both centrelines converge to Ghia (u,v RMS ~1e-2 -> ~6e-3 as n=48->64),
 the pressure 2nd-difference (checkerboard indicator) is small and decreasing, and the
-stabilisation operator IS the project's K. The pressure is trustworthy once stabilised,
-and it lives on the same operator -- P0 passes.
+stabilisation operator is a consistent P1 Laplacian of the project's kind. The pressure
+is trustworthy once stabilised -- P0 passes.
 """
 import numpy as np
 from scipy.sparse import coo_matrix, bmat, csr_matrix
@@ -134,16 +136,17 @@ def checkA_ghia():
 
 
 def checkB_same_operator():
-    print("\n[STEP 2] The cavity pressure lives on the SAME operator K (a correlation domain)")
+    print("\n[STEP 2] The cavity pressure lives on the same kind of operator K (a correlation domain)")
     V, ux, uy, p, it, tris, K, tau = solve_cavity(48, 100.0)
-    # the PSPG stabilisation block is exactly -tau * K, the project's stiffness
-    # (the same K that carries heat 02/03, Coulomb 06e, temperature 06g/06h)
+    # the PSPG stabilisation block is exactly -tau * K, with K the 2-D P1 stiffness
+    # assembled like the Kuhn-cube K (heat 02/03, Coulomb 06e, temperature 06g/06h),
+    # but a separate 2-D matrix
     Krow_sum = abs(K.sum(axis=1)).max()   # K is a Laplacian: row sums ~ 0
     print(f"    stabilisation block = -tau*K, tau={tau:.4f}; K row-sum max = {Krow_sum:.2e} (Laplacian)")
-    print("    -> pressure is not a new machine: it is another reading of L=M^-1 K,")
-    print("       the one tetrahedral operator carrying heat/wave/Coulomb/temperature.")
+    print("    -> pressure is not a new machine: it is another reading of a P1 Laplacian,")
+    print("       assembled like the Kuhn-cube K (here on 2-D triangles, a separate matrix).")
     assert Krow_sum < 1e-9, "K is not a consistent Laplacian"
-    print("    PASS  (pressure joins the domain map on the same operator)")
+    print("    PASS  (pressure joins the domain map on the same kind of operator)")
 
 
 if __name__ == "__main__":
@@ -154,6 +157,6 @@ if __name__ == "__main__":
     print("  - STEP 1: PSPG-stabilised P1 reproduces Ghia Re=100 (u,v RMS ~6e-3 at n=64,")
     print("    converging) with a SMOOTH pressure -- the '06z pressure-not-trustworthy' gap")
     print("    is closed by stabilisation, validated against an external standard.")
-    print("  - STEP 2: the stabilisation IS -tau*K, the project's one operator. Pressure is")
-    print("    a correlation domain on the same tetrahedron, not a separate machine.")
+    print("  - STEP 2: the stabilisation is -tau*K, a P1 Laplacian of the project's kind")
+    print("    (2-D triangles here). Pressure is a correlation domain, not a separate machine.")
     print("  - STEP 3 (3-D): the same assembly extends to tetrahedra -- see cavity3d demo.")

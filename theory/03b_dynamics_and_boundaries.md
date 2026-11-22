@@ -54,16 +54,22 @@ oscillates at `cos(√λ · t)` under an envelope `exp(−γ t / 2)`.
   through space.
 - `γ > 0` → amplitude follows `exp(−γ t / 2)`; half-life `t½ = ln 2 / (γ/2)`.
 
-**Verification** (lowest non-zero eigenmode seeded, 400 steps, tail/initial
-amplitude ratio vs. predicted envelope `exp(−γ·dt·N/2)`):
+**Verification** (lowest non-zero eigenmode seeded, 400 steps; the envelope decay
+rate is fitted to the logarithm of the oscillation peaks and compared with `γ/2`,
+tolerance 3%):
 
-| γ   | measured ratio | predicted envelope |
-|-----|----------------|--------------------|
-| 0.0 | 1.011          | 1.000  (persists)  |
-| 0.5 | 0.047          | 0.044              |
-| 2.0 | ~0.000         | ~0.000             |
+| γ   | measured decay rate | predicted `γ/2` | error |
+|-----|---------------------|-----------------|-------|
+| 0.0 | tail/head `1.006`   | no decay        | —     |
+| 0.5 | `0.2498` (9 peaks)  | `0.25`          | `0.08%` |
+| 2.0 | `1.0020` (8 peaks)  | `1.0`           | `0.20%` |
 
-The measured decay tracks the analytic envelope. `γ = 0` is genuinely
+The measured decay tracks the analytic envelope. *(Correction: an earlier version
+compared the ratio of 20-step window maxima with `exp(−γ·dt·N/2)` using an absolute
+tolerance `0.05`. Because the mode period is ~84 steps, those window maxima are
+phase-dependent (`0.101` vs `0.092` at `γ=0.5`, ~10% off), and the absolute tolerance
+accepted any value once the prediction was small (`γ=2`: prediction `~10⁻⁴`). The
+peak-fitted rate is phase-independent.)* `γ = 0` is genuinely
 non-dissipative within discrete-energy fluctuation. **PASS.**
 
 ---
