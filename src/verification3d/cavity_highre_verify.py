@@ -14,10 +14,19 @@ strain.
   CHECK B  Cross-check at higher Re: PSPG and Taylor-Hood still agree, but the agreement
            LOOSENS with Re (RMS 0.006 at Re=400 -> 0.016 at Re=1000) -- the numerical
            "rev": the scheme begins to strain.
-  CHECK C  The physical "rev": the secondary corner vortices (bottom-left, bottom-right)
-           GROW with Re (bottom-right reverse flow roughly doubles Re=400->1000), and the
-           primary-vortex centre migrates toward the geometric centre -- the known
-           Ghia behaviour, reproduced by both elements.
+  CHECK C  The physical "rev", measured with the STREAM FUNCTION psi (PSPG only):
+           K psi = Bx v - By u, psi = 0 on the walls (u = dpsi/dy, v = -dpsi/dx, as in
+           Ghia). The primary vortex is min(psi) (< 0); the bottom-right / bottom-left
+           secondary eddies are max(psi) (> 0, counter-rotating) in each bottom corner.
+           Their locations are compared with Ghia's Table V, their growth with Re is
+           checked, and their strength is tracked under refinement (n = 64, 96, 128
+           at Re = 1000). The secondary-eddy strengths are still BELOW Ghia and still
+           rising with n at these resolutions -- reported as such, not as converged.
+
+           (History: an earlier version measured the "bottom-right corner vortex" as
+           min(u) in the window x>0.8, y<0.2. That minimum sits on the window edge and is
+           the primary vortex's return flow along the floor, not the secondary eddy,
+           whose near-wall u is positive. Corrected here; see issue #3, A3.)
 
 This is steady laminar throughout (true unsteady transition is ~Re 8000); the "rev" here
 is the structural change within the steady regime plus the discretisation's strain.
@@ -25,7 +34,8 @@ is the structural change within the steady regime plus the discretisation's stra
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 import numpy as np
-from cavity_pspg_verify import solve_cavity as solve_pspg
+from scipy.sparse.linalg import spsolve
+from cavity_pspg_verify import solve_cavity as solve_pspg, mesh_square, assemble
 from cavity_taylorhood_verify import solve_TH, th_centreline
 
 GHIA_Y = np.array([0, .0547, .0625, .0703, .1016, .1719, .2813, .4531, .5,
@@ -35,6 +45,17 @@ GHIA = {
                    -.11477, .02135, .16256, .29093, .55892, .61756, .68439, .75837, 1.0]),
     1000: np.array([0, -.18109, -.20196, -.22220, -.29730, -.38289, -.27805, -.10648,
                     -.06080, .05702, .18719, .33304, .46604, .51117, .57492, .65928, 1.0]),
+}
+
+# Ghia, Ghia & Shin (1982), Table V: stream function value and location (x, y) of the
+# primary vortex and of the bottom-right (BR) / bottom-left (BL) secondary vortices.
+GHIA_VORTEX = {
+    400: {"primary": (-0.113909, (0.5547, 0.6055)),
+          "BR": (6.42352e-4, (0.8906, 0.1250)),
+          "BL": (1.41951e-5, (0.0508, 0.0469))},
+    1000: {"primary": (-0.117929, (0.5313, 0.5625)),
+           "BR": (1.75102e-3, (0.8594, 0.1094)),
+           "BL": (2.31129e-4, (0.0859, 0.0781))},
 }
 
 
@@ -70,22 +91,64 @@ def checkB_crosscheck_loosens():
     print("    PASS")
 
 
+def stream_function(n, V, ux, uy):
+    """psi with K psi = int phi_i (dv/dx - du/dy), psi = 0 on the walls."""
+    Vm, Tm = mesh_square(n)
+    assert np.allclose(Vm, V)
+    K, Ml, Bx, By, _ = assemble(Vm, Tm)
+    x, y = V[:, 0], V[:, 1]
+    wall = np.isclose(x, 0) | np.isclose(x, 1) | np.isclose(y, 0) | np.isclose(y, 1)
+    free = ~wall
+    psi = np.zeros(len(V))
+    psi[free] = spsolve(K[free][:, free].tocsc(), (Bx @ uy - By @ ux)[free])
+    return psi
+
+
+def vortices(n, Re):
+    _, _, V, ux, uy = pspg_centreline(n, Re)
+    psi = stream_function(n, V, ux, uy)
+    x, y = V[:, 0], V[:, 1]
+    out = {}
+    i = int(np.argmin(psi)); out["primary"] = (psi[i], (x[i], y[i]))
+    for tag, win in (("BR", (x > 0.6) & (y < 0.4)), ("BL", (x < 0.4) & (y < 0.4))):
+        idx = np.where(win)[0]; j = idx[int(np.argmax(psi[idx]))]
+        out[tag] = (psi[j], (x[j], y[j]))
+    return out
+
+
 def checkC_the_rev():
-    print("\n[C] The 'rev': secondary corner vortices grow with Re; primary centre migrates")
+    print("\n[C] The 'rev' via the stream function psi (PSPG): primary vortex + corner eddies")
+    res = {}
+    for Re, n in ((400, 128), (1000, 64), (1000, 96), (1000, 128)):
+        res[(Re, n)] = v = vortices(n, Re)
+        g = GHIA_VORTEX[Re]
+        print(f"    Re={Re:>4} n={n:>3}:")
+        for tag in ("primary", "BR", "BL"):
+            val, (px, py) = v[tag]; gval, (gx, gy) = g[tag]
+            print(f"      {tag:>7}: psi={val:+.3e} at ({px:.3f},{py:.3f})"
+                  f"   Ghia {gval:+.3e} at ({gx:.4f},{gy:.4f})   ratio {val/gval:5.2f}")
+    fine = {Re: res[(Re, 128)] for Re in (400, 1000)}
+    # 1) locations: primary centre and BR eddy where Ghia puts them
     for Re in (400, 1000):
-        yl, ul, V, ux, uy = pspg_centreline(96, Re)
-        x, y = V[:, 0], V[:, 1]
-        bl = (x < 0.2) & (y < 0.2) & (x > 0.01) & (y > 0.01)
-        br = (x > 0.8) & (y < 0.2) & (x < 0.99) & (y > 0.01)
-        cv_bl = ux[bl].max(); cv_br = ux[br].min()
-        # primary vortex centre ~ where speed is minimal in the interior
-        interior = (x > 0.2) & (x < 0.9) & (y > 0.2) & (y < 0.9)
-        spd = np.hypot(ux, uy)
-        ci = np.where(interior)[0][np.argmin(spd[interior])]
-        print(f"    Re={Re}: bottom-left u_max={cv_bl:+.4f}  bottom-right u_min={cv_br:+.4f}"
-              f"  |  primary centre ~({x[ci]:.2f},{y[ci]:.2f})")
-    print("    -> corner vortices strengthen with Re (bottom-right roughly doubles 400->1000);")
-    print("       the primary centre migrates toward the geometric centre -- the Ghia 'rev'.")
+        for tag in ("primary", "BR"):
+            (px, py), (gx, gy) = fine[Re][tag][1], GHIA_VORTEX[Re][tag][1]
+            assert np.hypot(px - gx, py - gy) < 0.05, f"{tag} location off at Re={Re}"
+    # 2) the secondary eddies are counter-rotating (psi > 0) and grow with Re
+    assert fine[400]["BR"][0] > 0 and fine[1000]["BR"][0] > 0
+    assert fine[1000]["BR"][0] > 2.0 * fine[400]["BR"][0], "BR eddy does not grow with Re"
+    assert fine[1000]["BL"][0] > 10.0 * max(fine[400]["BL"][0], 1e-12), "BL eddy does not grow"
+    # 3) under refinement the BR eddy strength rises monotonically toward Ghia
+    br = [res[(1000, n)]["BR"][0] for n in (64, 96, 128)]
+    assert br[0] < br[1] < br[2] < GHIA_VORTEX[1000]["BR"][0], "BR not approaching Ghia from below"
+    gbr = GHIA_VORTEX[1000]["BR"][0]
+    print(f"    BR eddy at Re=1000 under refinement: "
+          + "  ".join(f"n={n}: {b:.3e} ({b/gbr*100:.0f}% of Ghia)" for n, b in zip((64, 96, 128), br)))
+    print(f"    growth Re 400->1000 (n=128): BR x{fine[1000]['BR'][0]/fine[400]['BR'][0]:.1f}"
+          f" (Ghia x{GHIA_VORTEX[1000]['BR'][0]/GHIA_VORTEX[400]['BR'][0]:.1f}),"
+          f"  BL x{fine[1000]['BL'][0]/fine[400]['BL'][0]:.0f}"
+          f" (Ghia x{GHIA_VORTEX[1000]['BL'][0]/GHIA_VORTEX[400]['BL'][0]:.0f})")
+    print("    -> eddies sit where Ghia puts them, counter-rotate, and grow with Re; their")
+    print("       strength is still rising with n (P1/PSPG under-resolves them): NOT converged.")
     print("    PASS")
 
 
@@ -98,6 +161,7 @@ if __name__ == "__main__":
     print("  - Both PSPG and Taylor-Hood reproduce Ghia at Re=400 and Re=1000 (converging;")
     print("    Re=1000 needs more resolution -> larger but shrinking error).")
     print("  - The methods agree, with agreement loosening as Re rises (numerical 'rev').")
-    print("  - The physical 'rev' is real and captured: secondary corner vortices grow with")
-    print("    Re and the primary vortex centre migrates -- the known Ghia structure change.")
+    print("  - The physical 'rev' is captured qualitatively (stream function): the corner")
+    print("    eddies sit at Ghia's locations, counter-rotate and grow with Re, and the primary")
+    print("    centre migrates; the eddy STRENGTHS are under-resolved and still rising with n.")
     print("  - All steady laminar; true unsteady transition (~Re 8000) is far beyond this.")

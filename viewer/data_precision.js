@@ -41,14 +41,17 @@ const PRECISION = {
     th:   [ {x:"n24",err:0.0338}, {x:"n32",err:0.0265}, {x:"n40",err:0.0211} ]
   },
 
-  // The rev separation (10): which part shrinks (1) vs converges (3).
+  // The rev separation (10): which part shrinks (1) vs the physical corner eddy.
+  // CORRECTED (issue #3, A3): the physical series is now the bottom-right eddy's stream
+  // function at Re=1000 (PSPG, cavity_highre_verify.py check C). The earlier series
+  // (0.0989 / 0.1413 / 0.1414) was a u_min proxy that measured the primary return flow.
   revSeparation: {
     numerical: { label:"数値のレブ (両法不一致)", source:"10",
       note:"細分で減少 → (1)近似誤差",
       points:[ {x:"粗",err:0.0161}, {x:"中",err:0.0140}, {x:"密",err:0.0130} ] },
-    physical: { label:"物理のレブ (コーナー渦)", source:"10",
-      note:"一定値に収束 → (3)場固有",
-      points:[ {x:"n64",err:0.0989}, {x:"n96",err:0.1413}, {x:"n128",err:0.1414} ] }
+    physical: { label:"物理のレブ (右下二次渦 ψ, Re=1000)", source:"08b",
+      note:"細分で増加中 (Ghia 1.75e-3 の 55→67→74%) → まだ収束していない",
+      points:[ {x:"n64",err:9.585e-4}, {x:"n96",err:1.181e-3}, {x:"n128",err:1.304e-3} ] }
   },
 
   summary: [
