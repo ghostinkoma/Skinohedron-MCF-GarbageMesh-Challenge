@@ -19,7 +19,7 @@ different flow -- weaker, not comparable with Ghia -- and serves only as a diagn
   CHECK C  removing the singularity shrinks the last change by more than 10x for both
            quantities -- the slow convergence is attributable to the lid corners.
 
-Runtime: ~8 minutes.
+Runtime: ~6 minutes.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

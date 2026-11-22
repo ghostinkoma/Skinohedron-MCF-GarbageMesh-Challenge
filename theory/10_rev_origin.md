@@ -112,11 +112,11 @@ diagnostic — it is not compared with Ghia.
 
 | lid | primary `ψ`: fitted order | primary: change n=56→64 | BR eddy: change n=56→64 |
 |---|---|---|---|
-| classical `u = 1` | `p ≈ 0.87` | `0.87%` | `2.4%` |
-| regularised `16x²(1−x)²` | `p ≈ 2.85` | `0.029%` | `0.045%` |
+| classical `u = 1` | `p ≈ 0.85` | `0.87%` | `2.39%` |
+| regularised `16x²(1−x)²` | `p ≈ 2.88` | `0.028%` | `0.045%` |
 
 Removing the singularity raises the observed order from below 1 to about 3 and shrinks the
-refinement changes by about 30× (primary) and 50× (BR eddy). With nothing else changed,
+refinement changes by 31× (primary) and 53× (BR eddy). With nothing else changed,
 the slow convergence of §3b is **attributable to the lid-corner singularity**, not to the
 element, the stabilisation or the solver. This is the classical picture: a corner
 singularity limits the global convergence rate of a standard (non-graded) FE mesh, and
@@ -159,7 +159,7 @@ did not — the convergence now shown is a different, stream-function result); t
 strength to better than ~10%; a graded or singularity-enriched mesh (not built).
 
 **Verified (follow-up, §3c):** with only the lid condition changed, the observed order rises
-from `~0.87` (classical) to `~2.85` (regularised) and the refinement changes drop ~30–50×:
+from `~0.85` (classical) to `~2.88` (regularised) and the refinement changes drop ~30–50×:
 the slow convergence comes from the lid-corner singularity.
 
 **Next (optional):** local mesh grading at the two top corners for the classical lid, to
@@ -169,6 +169,6 @@ recover the faster rate on the Ghia problem itself.
 
 - Verification: `src/verification3d/rev_origin_verify.py` (checks A–C; ~5 min);
   `src/verification3d/corner_eddy_convergence_verify.py` (§3b; ~11 min);
-  `src/verification3d/lid_singularity_verify.py` (§3c; ~8 min).
+  `src/verification3d/lid_singularity_verify.py` (§3c; ~6 min).
 - Uses `src/verification3d/cavity_highre_verify.py` (stream function, Ghia Table V
   constants) and the PSPG / Taylor–Hood solvers of `08`, `08a`.
