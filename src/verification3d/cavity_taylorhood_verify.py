@@ -112,13 +112,14 @@ def assemble_adv(data, nV, U):
     return coo_matrix((d, (r, c)), shape=(nV, nV)).tocsr()
 
 
-def solve_TH(n, Re, picard=40, tol=1e-7):
+def solve_TH(n, Re, picard=40, tol=1e-7, lid_profile=None):
+    """lid_profile: optional function u_lid(x); default None = the classical lid u = 1."""
     V, tris, nV1 = mesh_square_p2(n); nV = len(V); nu = 1.0/Re
     data = precompute(V, tris); K, Bx, By = assemble_static(data, nV, nV1)
     x, y = V[:, 0], V[:, 1]; lid = np.isclose(y, 1.0)
     walls = (np.isclose(x, 0) | np.isclose(x, 1) | np.isclose(y, 0)) & ~lid
     diru = lid | walls
-    ub = np.zeros(nV); ub[lid] = 1.0; vb = np.zeros(nV)
+    ub = np.zeros(nV); ub[lid] = 1.0 if lid_profile is None else lid_profile(x[lid]); vb = np.zeros(nV)
     U = np.zeros((nV, 2)); U[:, 0] = ub.copy()
     Z = csr_matrix((nV, nV)); Zp = csr_matrix((nV1, nV1)); didx = np.where(diru)[0]
     it = 0
